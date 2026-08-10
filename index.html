@@ -263,6 +263,28 @@ select{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-
   </div>
 </div>
 
+<!-- ===== Modal: 添加成员 ===== -->
+<div class="modal-overlay" id="modal-member">
+  <div class="modal">
+    <div class="modal-header"><h3>添加成员</h3><button class="modal-close" onclick="closeModal('modal-member')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>姓名</label><input type="text" id="member-name" placeholder="输入新成员姓名" /></div>
+      <div class="form-group"><label>所属组别</label>
+        <select id="member-group">
+          <option value="第一组">第一组</option>
+          <option value="第二组">第二组</option>
+          <option value="第三组">第三组</option>
+        </select>
+      </div>
+      <p style="font-size:11px;color:#999;margin:4px 0 0;line-height:1.6">添加后，该成员将自动进入每周积分、积分构成、每月积分、总积分排行（四个表同步）。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-member')">取消</button>
+      <button class="btn btn-primary" onclick="submitMember()">添加</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ===== 管理员权限 =====
@@ -345,27 +367,29 @@ function saveTD(){
 }
 function savePW(){
   var wk=weeklySelected;
+  var snap={};for(var n in PW[wk])snap[n]=PW[wk][n];
   var newData={};
-  for(var n in PW[wk]){
+  for(var n in snap){
     var ne=document.getElementById('pw_name_'+n);
     var se=document.getElementById('pw_'+n);
-    var newName=ne?ne.value.trim()||n:n;
-    newData[newName]=se?parseInt(se.value)||0:PW[wk][n];
+    var ge=document.getElementById('pw_group_'+n);
+    var newName=ne?ne.value.trim():'';if(!newName)newName=n;
+    if(newName!==n)syncRename(n,newName);
+    if(ge){var ng=ge.value.trim();if(GROUPS[ng]&&ng!==getGroup(newName))setMemberGroup(newName,ng);}
+    newData[newName]=se?parseInt(se.value)||0:snap[n];
   }
   PW[wk]=newData;
 }
 function savePD(){
   var wk=detailWeek;
-  var newData={};
-  var fields=['a','sp','an','ho','re','di','st','t'];
-  for(var n in PD[wk]){
+  var snap={};for(var n in PD[wk])snap[n]=PD[wk][n];
+  var newData={};var fields=['a','sp','an','ho','re','di','st','t'];
+  for(var n in snap){
     var ne=document.getElementById('pd_name_'+n);
-    var newName=ne?ne.value.trim()||n:n;
+    var newName=ne?ne.value.trim():'';if(!newName)newName=n;
+    if(newName!==n)syncRename(n,newName);
     newData[newName]={};
-    fields.forEach(function(f){
-      var el=document.getElementById('pd_'+n+'_'+f);
-      newData[newName][f]=el?parseInt(el.value)||0:PD[wk][n][f];
-    });
+    fields.forEach(function(f){var el=document.getElementById('pd_'+n+'_'+f);newData[newName][f]=el?parseInt(el.value)||0:snap[n][f];});
   }
   PD[wk]=newData;
 }
@@ -454,16 +478,26 @@ function _uniq(obj,base){var n=base,i=1;obj=obj||{};while(obj[n]!==undefined)n=b
 // ===== 成员级增删（影响 每周积分 / 积分构成 / 每月积分 / 总积分，全局同步）=====
 function addMemberPrompt(){
   if(!requireAdmin())return;
-  var name=prompt('请输入新成员姓名：');
-  if(name===null)return;name=name.trim();
-  if(!name){showToast('姓名不能为空');return;}
-  var g=prompt('请输入所属组别（第一组 / 第二组 / 第三组）：','第一组');
-  if(g===null)return;g=(g||'第一组').trim();
-  if(!GROUPS[g])g='第一组';
-  addMember(name,g);
+  var nm=document.getElementById('member-name');
+  var gp=document.getElementById('member-group');
+  if(nm)nm.value='';
+  if(gp)gp.value='第一组';
+  openModal('modal-member');
+  if(nm)setTimeout(function(){try{nm.focus();}catch(e){}},50);
+}
+function submitMember(){
+  var nm=document.getElementById('member-name');
+  var gp=document.getElementById('member-group');
+  if(!nm)return;
+  var name=nm.value.trim();
+  if(!name){showToast('请输入姓名');return;}
+  var group=gp?gp.value:'第一组';
+  closeModal('modal-member');
+  addMember(name,group);
 }
 function addMember(name,group){
-  if(GROUPS[group].indexOf(name)>=0){showToast('该成员已存在');renderPage();return;}
+  if(!GROUPS[group])group='第一组';
+  if(getGroup(name)){showToast('该成员已存在（'+getGroup(name)+'）');renderPage();return;}
   GROUPS[group].push(name);
   ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
     if(!PW[w])PW[w]={};PW[w][name]=0;
@@ -506,6 +540,31 @@ function delTotal(name){if(!requireAdmin())return;delMember(name);}
 // 团队维度明细（增删周）
 function addTDWeek(){if(!requireAdmin())return;var mx=0;Object.keys(TD).forEach(function(w){var n=parseInt(w.replace('W',''))||0;if(n>mx)mx=n;});var nw='W'+(mx+1);TD[nw]={'第一组':[0,0,0,0,0,0,0],'第二组':[0,0,0,0,0,0,0],'第三组':[0,0,0,0,0,0,0],star:''};saveData();renderPage();showToast('已添加'+nw);}
 function delTDWeek(w){if(!requireAdmin())return;if(!confirm('确认删除 '+w+' 的维度数据？'))return;delete TD[w];saveData();renderPage();showToast('已删除');}
+// ===== 成员改名/调组 统一同步（避免各表数据不一致）=====
+function syncRename(oldName,newName){
+  if(!oldName||oldName===newName)return;
+  for(var g in GROUPS){var i=GROUPS[g].indexOf(oldName);if(i>=0){if(GROUPS[g].indexOf(newName)<0)GROUPS[g][i]=newName;else GROUPS[g].splice(i,1);}}
+  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
+    if(PW[w]&&PW[w][oldName]!==undefined){PW[w][newName]=PW[w][oldName];delete PW[w][oldName];}
+    if(PD[w]&&PD[w][oldName]){PD[w][newName]=PD[w][oldName];delete PD[w][oldName];}
+  });
+  for(var m in monthlyData){if(monthlyData[m]&&monthlyData[m][oldName]!==undefined){monthlyData[m][newName]=monthlyData[m][oldName];delete monthlyData[m][oldName];}}
+  if(totalData&&totalData[oldName]!==undefined){totalData[newName]=totalData[oldName];delete totalData[oldName];}
+  stars.forEach(function(s){if(s.name===oldName)s.name=newName;});
+  monthlyStars.forEach(function(s){if(s.name===oldName)s.name=newName;});
+  DB.forEach(function(d){if(d.name===oldName)d.name=newName;});
+}
+function setMemberGroup(name,newGroup){
+  if(!GROUPS[newGroup])return;
+  for(var g in GROUPS){var i=GROUPS[g].indexOf(name);if(i>=0)GROUPS[g].splice(i,1);}
+  if(GROUPS[newGroup].indexOf(name)<0)GROUPS[newGroup].push(name);
+}
+function groupSelect(id,val){
+  var h='<select class="edit-text" id="'+id+'">';
+  ['第一组','第二组','第三组'].forEach(function(g){h+='<option value="'+g+'"'+(g===val?' selected':'')+'>'+g+'</option>';});
+  h+='</select>';
+  return h;
+}
 
 // ===== Supabase 配置 =====
 const SUPABASE_URL='https://njdcmlmbbfhwerzvnpul.supabase.co';
@@ -882,7 +941,7 @@ function renderWeeklyList(wk){
   var pwEdit=editSections['pw-list'];
   arr.forEach((r,i)=>{
     if(pwEdit){
-      h+='<div class="rank-row"><div class="rank-num '+rankClass(i)+'">'+medalIcon(i)+'</div><div class="rank-name">'+textInput('pw_name_'+r.name,r.name)+'</div><div class="rank-group">'+textInput('pw_group_'+r.name,r.group)+'</div><div class="rank-score">'+numInput('pw_'+r.name,r.score)+' <button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px;margin-left:4px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删</button></div></div>';
+      h+='<div class="rank-row"><div class="rank-num '+rankClass(i)+'">'+medalIcon(i)+'</div><div class="rank-name">'+textInput('pw_name_'+r.name,r.name)+'</div><div class="rank-group">'+groupSelect('pw_group_'+r.name,r.group)+'</div><div class="rank-score">'+numInput('pw_'+r.name,r.score)+' <button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px;margin-left:4px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删</button></div></div>';
     } else {
       h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${medalIcon(i)}</div><div class="rank-name">${r.name}</div><div class="rank-group">${r.group}</div><div class="rank-score">${r.score}${levelBadge(r.score)}</div></div>`;
     }
@@ -920,7 +979,7 @@ function pageMonthly(){
     if(mEdit){
       h+='<table class="simple-table"><tr><th>姓名</th><th>组别</th><th>分数</th><th>操作</th></tr>';
       arr.forEach(function(r){
-        h+='<tr><td>'+textInput('m_name_'+m.key+'_'+r.name,r.name)+'</td><td>'+textInput('m_group_'+m.key+'_'+r.name,r.group)+'</td><td>'+numInput('m_score_'+m.key+'_'+r.name,r.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删除</button></td></tr>';
+        h+='<tr><td>'+textInput('m_name_'+m.key+'_'+r.name,r.name)+'</td><td>'+groupSelect('m_group_'+m.key+'_'+r.name,r.group)+'</td><td>'+numInput('m_score_'+m.key+'_'+r.name,r.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删除</button></td></tr>';
       });
       h+='</table><div style="margin-top:6px"><button class="btn btn-primary btn-sm" onclick="addMemberPrompt()">➕ 添加成员</button></div>';
     } else {
@@ -948,7 +1007,7 @@ function pageTotal(){
   if(tEdit){
     h+='<table class="simple-table"><tr><th>姓名</th><th>组别</th><th>总分</th><th>操作</th></tr>';
     arr.forEach(function(r){
-      h+='<tr><td>'+textInput('t_name_'+r.name,r.name)+'</td><td>'+textInput('t_group_'+r.name,r.group)+'</td><td>'+numInput('t_score_'+r.name,r.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删除</button></td></tr>';
+      h+='<tr><td>'+textInput('t_name_'+r.name,r.name)+'</td><td>'+groupSelect('t_group_'+r.name,r.group)+'</td><td>'+numInput('t_score_'+r.name,r.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删除</button></td></tr>';
     });
     h+='</table><div style="margin-top:6px"><button class="btn btn-primary btn-sm" onclick="addMemberPrompt()">➕ 添加成员</button></div>';
   } else {
@@ -1211,28 +1270,30 @@ function pageMonthlyStar(){
   return h;
 }
 function saveMonthlyData(){
-  var months=[{label:'7月',key:'7月'},{label:'8月',key:'8月'}];
+  var months=[{key:'7月'},{key:'8月'}];
   months.forEach(function(m){
-    var newData={};
-    var names=getAllNames();
+    var newData={};var names=getAllNames();
     names.forEach(function(n){
       var ne=document.getElementById('m_name_'+m.key+'_'+n);
       var ge=document.getElementById('m_group_'+m.key+'_'+n);
       var se=document.getElementById('m_score_'+m.key+'_'+n);
-      var newName=ne?ne.value.trim()||n:n;
+      var newName=ne?ne.value.trim():'';if(!newName)newName=n;
+      if(newName!==n)syncRename(n,newName);
+      if(ge){var ng=ge.value.trim();if(GROUPS[ng]&&ng!==getGroup(newName))setMemberGroup(newName,ng);}
       newData[newName]=se?parseInt(se.value)||0:0;
     });
     monthlyData[m.key]=newData;
   });
 }
 function saveTotalData(){
-  var newData={};
-  var names=getAllNames();
+  var newData={};var names=getAllNames();
   names.forEach(function(n){
     var ne=document.getElementById('t_name_'+n);
     var ge=document.getElementById('t_group_'+n);
     var se=document.getElementById('t_score_'+n);
-    var newName=ne?ne.value.trim()||n:n;
+    var newName=ne?ne.value.trim():'';if(!newName)newName=n;
+    if(newName!==n)syncRename(n,newName);
+    if(ge){var ng=ge.value.trim();if(GROUPS[ng]&&ng!==getGroup(newName))setMemberGroup(newName,ng);}
     newData[newName]=se?parseInt(se.value)||0:0;
   });
   totalData=newData;
