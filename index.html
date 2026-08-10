@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>飞鹰班积分工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif}
+body{display:flex;background:#f0f2f5}
+/* 左侧导航 */
+.sidebar{width:108px;min-width:108px;height:100vh;background:#fff;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:10;overflow:hidden}
+.sidebar-header{padding:10px 6px 8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;text-align:center;flex-shrink:0}
+.sidebar-header .logo{font-size:15px;font-weight:700;letter-spacing:1px}
+.sidebar-header .sub{font-size:9px;opacity:.8;margin-top:2px}
+.nav-tree{flex:1;overflow-y:auto;padding:4px 0}
+.nav-tree::-webkit-scrollbar{width:3px}
+.nav-tree::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+.nav-item{cursor:pointer;user-select:none}
+.nav-label{display:flex;align-items:center;padding:8px 8px;font-size:13px;color:#333;border-left:3px solid transparent;transition:all .15s;gap:4px;line-height:1.3}
+.nav-label:active{background:#f0f0f0}
+.nav-label.active{background:#e6f7ff;border-left-color:#667eea;color:#667eea;font-weight:600}
+.nav-label .icon{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.nav-label .arrow{margin-left:auto;font-size:10px;color:#999;transition:transform .2s;flex-shrink:0}
+.nav-label .arrow.open{transform:rotate(90deg)}
+.nav-children{display:none;background:#fafafa}
+.nav-children.open{display:block}
+.nav-children .nav-label{padding-left:28px;font-size:12px;color:#666}
+.nav-children .nav-label.active{color:#667eea;font-weight:600;background:#e6f7ff;border-left-color:#667eea}
+/* 内容区 */
+.content{margin-left:108px;flex:1;height:100vh;overflow-y:auto;padding:10px}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:16px;font-weight:700;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+/* 卡片 */
+.card{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card-title{font-size:13px;font-weight:600;color:#667eea;margin-bottom:8px}
+/* 数据卡片 */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.stat-card{background:#fff;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stat-card .num{font-size:22px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .lbl{font-size:10px;color:#999;margin-top:2px}
+/* 冠军banner */
+.banner{background:linear-gradient(135deg,#f6d365,#fda085);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.banner .medal{font-size:24px}
+.banner .info .t{font-size:10px;color:rgba(0,0,0,.5)}
+.banner .info .v{font-size:15px;font-weight:700;color:#333}
+/* 排名行 */
+.rank-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.rank-row:last-child{border-bottom:none}
+.rank-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;margin-right:8px}
+.rank-num.r1{background:#ffd700}.rank-num.r2{background:#c0c0c0}.rank-num.r3{background:#cd7f32}
+.rank-num.r4{background:#ddd;color:#666}
+.rank-name{flex:1;font-weight:500}
+.rank-group{font-size:11px;color:#999;margin-right:8px}
+.rank-score{font-weight:700;font-size:14px;color:#667eea}
+/* 筛选按钮 */
+.filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border-radius:16px;border:1px solid #ddd;background:#fff;font-size:12px;color:#666;cursor:pointer;transition:all .15s}
+.filter-btn.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:transparent}
+/* 每日明细 */
+.day-block{margin-bottom:8px}
+.day-header{font-size:12px;font-weight:600;color:#667eea;padding:4px 0;border-bottom:1px dashed #e0e0e0;margin-bottom:4px}
+.day-items{display:flex;flex-wrap:wrap;gap:4px}
+.day-tag{font-size:11px;background:#f0f0ff;padding:2px 6px;border-radius:4px;color:#555}
+.day-tag .pts{color:#667eea;font-weight:700;margin-left:2px}
+/* 荣誉卡片 */
+.star-cards{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.star-card{min-width:90px;background:#fff;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08);flex-shrink:0}
+.star-card .wk{font-size:10px;color:#999}
+.star-card .nm{font-size:14px;font-weight:700;color:#333;margin:4px 0}
+.star-card .gr{font-size:10px;color:#667eea}
+.star-card .emoji{font-size:22px}
+/* 对比分析 */
+select{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;margin-bottom:8px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:12px}
+.cmp-table th,.cmp-table td{padding:5px 4px;text-align:center;border-bottom:1px solid #f0f0f0}
+.cmp-table th{background:#f8f8ff;color:#667eea;font-weight:600}
+.cmp-table td.win{color:#52c41a;font-weight:700}
+/* 趋势图表 */
+.trend-section{margin-bottom:12px}
+.trend-section-title{font-size:14px;font-weight:700;color:#333;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.trend-subtitle{font-size:12px;color:#999;font-weight:400;margin-left:4px}
+.chart-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.chart-tab{padding:4px 12px;border-radius:14px;border:1px solid #ddd;background:#fff;font-size:12px;color:#666;cursor:pointer;transition:all .15s}
+.chart-tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:transparent}
+.group-chart-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.group-chart-card{flex:1;min-width:280px;background:#fff;border-radius:10px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.group-chart-title{font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+/* 表格通用 */
+.simple-table{width:100%;border-collapse:collapse;font-size:12px}
+.simple-table th,.simple-table td{padding:5px 4px;text-align:center;border-bottom:1px solid #f0f0f0}
+.simple-table th{background:#f8f8ff;color:#667eea;font-weight:600;font-size:11px}
+.simple-table td{color:#333}
+.highlight-cell{color:#667eea;font-weight:700}
+/* 积分构成表 */
+.detail-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+.detail-table{width:100%;border-collapse:collapse;font-size:11px;min-width:460px}
+.detail-table th,.detail-table td{padding:4px 2px;text-align:center;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+.detail-table th{background:#f8f8ff;color:#667eea;font-weight:600;font-size:10px;position:sticky;top:0}
+.detail-table td{color:#333}
+.detail-table .name-col{text-align:left;font-weight:600;min-width:48px;position:sticky;left:0;background:#fff;z-index:1}
+.detail-table th.name-col{background:#f8f8ff;z-index:2}
+.detail-table .total-col{font-weight:700;color:#667eea;background:#fafaff}
+.detail-table .subtotal-col{font-weight:600;color:#1890ff;background:#f5faff}
+.detail-table .sum-row td{background:#fafaff;font-weight:700;border-top:2px solid #667eea}
+/* ABCD色彩 */
+.cat-a{color:#722ed1}.cat-b{color:#1890ff}.cat-c{color:#52c41a}.cat-d{color:#fa8c16}
+.badge-a{display:inline-block;background:#f9f0ff;color:#722ed1;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600}
+.badge-b{display:inline-block;background:#e6f7ff;color:#1890ff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600}
+.badge-c{display:inline-block;background:#f6ffed;color:#52c41a;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600}
+.badge-d{display:inline-block;background:#fff7e6;color:#fa8c16;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600}
+/* 可编辑单元格 */
+.editable{cursor:pointer;border-bottom:1px dashed #ccc;transition:background .15s}
+.editable:hover{background:#f0f0ff;border-radius:3px}
+.edit-input{width:40px;border:1px solid #667eea;border-radius:4px;padding:1px 3px;font-size:11px;text-align:center;outline:none}
+.edit-input:focus{box-shadow:0 0 0 2px rgba(102,126,234,.2)}
+/* 规则说明 */
+.rule-section{margin-bottom:8px}
+.rule-title{font-size:12px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.rule-items{font-size:11px;color:#555;line-height:1.6;padding-left:4px}
+.rule-items span{display:inline-block;background:#f5f5f5;padding:0 4px;border-radius:3px;margin:1px 2px;font-size:10px;color:#666}
+/* 知识库/通知/记录 */
+.kb-item{padding:10px 0;border-bottom:1px solid #f5f5f5}
+.kb-item:last-child{border-bottom:none}
+.kb-item h4{font-size:13px;margin-bottom:3px;color:#333}
+.kb-item .kb-meta{font-size:11px;color:#999}
+.kb-cat{display:inline-block;background:#f0f0ff;color:#667eea;font-size:10px;padding:1px 6px;border-radius:3px;margin-right:6px}
+.notice-item{padding:10px 0;border-bottom:1px solid #f5f5f5}
+.notice-item:last-child{border-bottom:none}
+.notice-item h4{font-size:13px;margin-bottom:3px}
+.notice-item .meta{font-size:11px;color:#999;margin-bottom:4px}
+.notice-item .content{font-size:12px;line-height:1.6;color:#555}
+.pin-badge{display:inline-block;background:#fa8c16;color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-right:5px}
+/* 弹窗 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:12px;width:520px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.modal-header{padding:14px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-size:15px}
+.modal-close{font-size:20px;cursor:pointer;color:#999;border:none;background:none}
+.modal-body{padding:16px 18px}
+.modal-footer{padding:10px 18px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px}
+.form-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.form-group{flex:1;min-width:120px}
+.form-group label{display:block;font-size:11px;color:#999;margin-bottom:3px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit}
+.form-group textarea{min-height:70px;resize:vertical}
+.btn{padding:6px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-primary{background:#667eea;color:#fff}
+.btn-ghost{background:#f5f5f5;color:#666}
+.btn-sm{padding:3px 8px;font-size:11px}
+.btn-danger{background:#ff4d4f;color:#fff}
+.edit-num{width:42px;padding:2px 4px;font-size:11px;border:1px solid #667eea;border-radius:3px;text-align:center}
+.edit-text{width:70px;padding:2px 4px;font-size:11px;border:1px solid #667eea;border-radius:3px}
+.edit-num:focus,.edit-text:focus{outline:none;border-color:#764ba2;box-shadow:0 0 3px rgba(118,75,162,0.3)}
+/* 等级段位 */
+.lv-badge{display:inline-block;font-size:10px;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px;vertical-align:middle;font-weight:600;white-space:nowrap}
+.lv-bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-top:4px}
+.lv-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.profile-head{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
+.profile-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.profile-info{flex:1}
+.profile-info .pn{font-size:16px;font-weight:700;color:#333}
+.profile-info .pg{font-size:11px;color:#999;margin-top:2px}
+.profile-lv{background:#fafaff;border-radius:8px;padding:8px 10px;margin-bottom:8px}
+/* 全局搜索 */
+.search-box{position:relative}
+.search-box input{padding-left:30px}
+.search-box .ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#bbb}
+/* 导出页 */
+.export-icon{font-size:40px;text-align:center;margin:6px 0}
+/* toast */
+.toast{position:fixed;top:15px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;transition:opacity .3s}
+</style>
+</head>
+<body>
+<!-- 左侧导航 -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">🦅 飞鹰班</div>
+    <div class="sub">积分工作台</div>
+  </div>
+  <div class="nav-tree" id="navTree"></div>
+  <div id="sidebarFooter" style="padding:8px 6px;border-top:1px solid #eee;flex-shrink:0;text-align:center;"></div>
+</div>
+<!-- 内容区 -->
+<div class="content" id="contentArea"></div>
+
+<!-- ===== Modal: 知识库 ===== -->
+<div class="modal-overlay" id="modal-kb">
+  <div class="modal">
+    <div class="modal-header"><h3 id="kb-modal-title">新建知识</h3><button class="modal-close" onclick="closeModal('modal-kb')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="kb-id" />
+      <div class="form-row">
+        <div class="form-group"><label>标题</label><input type="text" id="kb-title" placeholder="知识标题" /></div>
+        <div class="form-group"><label>分类</label>
+          <select id="kb-category">
+            <option value="涂料知识">涂料知识</option>
+            <option value="质量管理">质量管理</option>
+            <option value="检测标准">检测标准</option>
+            <option value="工艺实操">工艺实操</option>
+            <option value="通用">通用</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>内容</label><textarea id="kb-content" style="min-height:180px;" placeholder="详细内容..."></textarea></div>
+      <div class="form-group"><label>作者</label><input type="text" id="kb-author" placeholder="您的姓名" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-kb')">取消</button>
+      <button class="btn btn-primary" onclick="submitKb()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: 通知 ===== -->
+<div class="modal-overlay" id="modal-notice">
+  <div class="modal">
+    <div class="modal-header"><h3 id="notice-modal-title">发布通知</h3><button class="modal-close" onclick="closeModal('modal-notice')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="notice-id" />
+      <div class="form-row">
+        <div class="form-group"><label>标题</label><input type="text" id="notice-title" placeholder="通知标题" /></div>
+        <div class="form-group"><label>类型</label>
+          <select id="notice-type"><option value="通知">通知</option><option value="安排">安排</option><option value="公示">公示</option><option value="提醒">提醒</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>内容</label><textarea id="notice-content" style="min-height:140px;" placeholder="通知内容..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>发布人</label><input type="text" id="notice-publisher" value="班长" /></div>
+        <div class="form-group"><label>置顶</label><select id="notice-pinned"><option value="0">不置顶</option><option value="1">置顶</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-notice')">取消</button>
+      <button class="btn btn-primary" onclick="submitNotice()">发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: 记录 ===== -->
+<div class="modal-overlay" id="modal-record">
+  <div class="modal">
+    <div class="modal-header"><h3 id="record-modal-title">新增记录</h3><button class="modal-close" onclick="closeModal('modal-record')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="record-id" />
+      <div class="form-row">
+        <div class="form-group"><label>日期</label><input type="date" id="record-date" /></div>
+        <div class="form-group"><label>分类</label>
+          <select id="record-category"><option value="活动">活动</option><option value="会议">会议</option><option value="决策">决策</option><option value="奖惩">奖惩</option><option value="其他">其他</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>标题</label><input type="text" id="record-title" placeholder="记录标题" /></div>
+      <div class="form-group"><label>内容</label><textarea id="record-content" style="min-height:120px;" placeholder="详细内容..."></textarea></div>
+      <div class="form-group"><label>记录人</label><input type="text" id="record-author" placeholder="您的姓名" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-record')">取消</button>
+      <button class="btn btn-primary" onclick="submitRecord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===== 管理员权限 =====
+const ADMIN_USER='李龙海';
+const ADMIN_PASS='llh123456';
+let isAdmin=false;
+try{isAdmin=sessionStorage.getItem('fy_admin')==='1';}catch(e){}
+function adminLogin(){
+  var u=prompt('请输入管理员账号：');
+  if(u===null)return;
+  var p=prompt('请输入密码：');
+  if(p===null)return;
+  if(u===ADMIN_USER&&p===ADMIN_PASS){
+    isAdmin=true;try{sessionStorage.setItem('fy_admin','1');}catch(e){}
+    showToast('管理员登录成功');
+    renderSidebarFooter();renderPage();
+  }else{
+    showToast('账号或密码错误');
+  }
+}
+function adminLogout(){
+  isAdmin=false;try{sessionStorage.removeItem('fy_admin');}catch(e){}
+  showToast('已退出管理员模式');
+  renderSidebarFooter();renderPage();
+}
+function requireAdmin(){
+  if(!isAdmin){showToast('请先登录管理员账号');return false;}
+  return true;
+}
+
+// ===== 通用编辑系统 =====
+let editSections={}; // 记录哪些区域正在编辑
+function editBtn(id,addAction){
+  if(!isAdmin)return '';
+  if(editSections[id]){
+    var add=addAction?addAction:'';
+    return add+'<button class="btn btn-primary btn-sm" style="float:right;margin-left:4px" onclick="saveEdit(\''+id+'\')">保存</button>'+
+           '<button class="btn btn-ghost btn-sm" style="float:right" onclick="cancelEdit(\''+id+'\')">取消</button>';
+  }
+  return '<button class="btn btn-ghost btn-sm" style="float:right" onclick="startEdit(\''+id+'\')">编辑</button>';
+}
+function startEdit(id){editSections[id]=true;renderPage();}
+function cancelEdit(id){delete editSections[id];renderPage();}
+function saveEdit(id){
+  // 各页面的save逻辑在对应函数中实现
+  if(id==='td-detail')saveTD();
+  else if(id==='pw-list')savePW();
+  else if(id==='pd-table')savePD();
+  else if(id==='dd-list')saveDD();
+  else if(id==='stars-list')saveStars();
+  else if(id==='mstars-list')saveMStars();
+  else if(id==='db-list')saveDB();
+  else if(id==='pdaily-list')savePDaily();
+  else if(id==='monthly-list')saveMonthlyData();
+  else if(id==='total-list')saveTotalData();
+  else if(id==='overview-list')saveOverviewData();
+  delete editSections[id];
+  saveData();
+  showToast('已保存');
+  renderPage();
+}
+function numInput(id,val){
+  return '<input type="number" class="edit-num" id="'+id+'" value="'+(val||0)+'" />';
+}
+function textInput(id,val){
+  return '<input type="text" class="edit-text" id="'+id+'" value="'+(val||'')+'" />';
+}
+// ===== 各数据类型的保存逻辑 =====
+function saveTD(){
+  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
+    ['第一组','第二组','第三组'].forEach(function(g){
+      for(var ci=0;ci<TCOLS.length;ci++){
+        var el=document.getElementById('td_'+w+'_'+g+'_'+ci);
+        if(el)TD[w][g][ci]=parseInt(el.value)||0;
+      }
+    });
+    var se=document.getElementById('td_star_'+w);
+    if(se)TD[w].star=se.value;
+  });
+}
+function savePW(){
+  var wk=weeklySelected;
+  var newData={};
+  for(var n in PW[wk]){
+    var ne=document.getElementById('pw_name_'+n);
+    var se=document.getElementById('pw_'+n);
+    var newName=ne?ne.value.trim()||n:n;
+    newData[newName]=se?parseInt(se.value)||0:PW[wk][n];
+  }
+  PW[wk]=newData;
+}
+function savePD(){
+  var wk=detailWeek;
+  var newData={};
+  var fields=['a','sp','an','ho','re','di','st','t'];
+  for(var n in PD[wk]){
+    var ne=document.getElementById('pd_name_'+n);
+    var newName=ne?ne.value.trim()||n:n;
+    newData[newName]={};
+    fields.forEach(function(f){
+      var el=document.getElementById('pd_'+n+'_'+f);
+      newData[newName][f]=el?parseInt(el.value)||0:PD[wk][n][f];
+    });
+  }
+  PD[wk]=newData;
+}
+function saveDD(){
+  var wk=detailWeek;
+  var newData={};
+  for(var day in DD[wk]){
+    var de=document.getElementById('dd_day_'+day);
+    var newDay=de?de.value.trim()||day:day;
+    newData[newDay]={};
+    for(var grp in DD[wk][day]){
+      newData[newDay][grp]={};
+      for(var n in DD[wk][day][grp]){
+        var ne=document.getElementById('dd_name_'+day+'_'+n);
+        var se=document.getElementById('dd_'+day+'_'+n);
+        var newName=ne?ne.value.trim()||n:n;
+        var v=se?parseInt(se.value)||0:DD[wk][day][grp][n];
+        if(v>0)newData[newDay][grp][newName]=v;
+      }
+    }
+  }
+  DD[wk]=newData;
+}
+function savePDaily(){
+  var wk=dailySelected;
+  var newData={};
+  for(var day in DD[wk]){
+    var de=document.getElementById('pdl_day_'+day);
+    var newDay=de?de.value.trim()||day:day;
+    newData[newDay]={};
+    for(var grp in DD[wk][day]){
+      newData[newDay][grp]={};
+      for(var n in DD[wk][day][grp]){
+        var ne=document.getElementById('pdl_name_'+day+'_'+n);
+        var se=document.getElementById('pdl_'+day+'_'+n);
+        var newName=ne?ne.value.trim()||n:n;
+        var v=se?parseInt(se.value)||0:DD[wk][day][grp][n];
+        if(v>0)newData[newDay][grp][newName]=v;
+      }
+    }
+  }
+  DD[wk]=newData;
+}
+function saveStars(){
+  stars.forEach(function(s,i){
+    var we=document.getElementById('star_wk_'+i);
+    var ne=document.getElementById('star_name_'+i);
+    var ge=document.getElementById('star_group_'+i);
+    if(we)s.wk=we.value;
+    if(ne)s.name=ne.value;
+    if(ge)s.group=ge.value;
+  });
+}
+function saveMStars(){
+  monthlyStars.forEach(function(s,i){
+    var me=document.getElementById('ms_month_'+i);
+    var ne=document.getElementById('ms_name_'+i);
+    var ge=document.getElementById('ms_group_'+i);
+    var se=document.getElementById('ms_score_'+i);
+    if(me)s.month=me.value;
+    if(ne)s.name=ne.value;
+    if(ge)s.group=ge.value;
+    if(se)s.score=parseInt(se.value)||0;
+  });
+}
+function saveDB(){
+  DB.forEach(function(d,i){
+    var we=document.getElementById('db_week_'+i);
+    var ne=document.getElementById('db_name_'+i);
+    var de=document.getElementById('db_date_'+i);
+    var se=document.getElementById('db_score_'+i);
+    var ge=document.getElementById('db_group_'+i);
+    if(we)d.week=we.value;
+    if(ne)d.name=ne.value;
+    if(de)d.date=de.value;
+    if(se)d.score=parseInt(se.value)||0;
+    if(ge)d.group=ge.value;
+  });
+}
+
+// ===== 添加 / 删除（管理员编辑态下可用）=====
+// 生成右上角添加按钮
+function abBtn(label,fn){return '<button class="btn btn-primary btn-sm" style="float:right;margin-left:4px" onclick="'+fn+'">'+label+'</button>';}
+// 取唯一键名（避免重名覆盖）
+function _uniq(obj,base){var n=base,i=1;obj=obj||{};while(obj[n]!==undefined)n=base+(i++);return n;}
+// ===== 成员级增删（影响 每周积分 / 积分构成 / 每月积分 / 总积分，全局同步）=====
+function addMemberPrompt(){
+  if(!requireAdmin())return;
+  var name=prompt('请输入新成员姓名：');
+  if(name===null)return;name=name.trim();
+  if(!name){showToast('姓名不能为空');return;}
+  var g=prompt('请输入所属组别（第一组 / 第二组 / 第三组）：','第一组');
+  if(g===null)return;g=(g||'第一组').trim();
+  if(!GROUPS[g])g='第一组';
+  addMember(name,g);
+}
+function addMember(name,group){
+  if(GROUPS[group].indexOf(name)>=0){showToast('该成员已存在');renderPage();return;}
+  GROUPS[group].push(name);
+  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
+    if(!PW[w])PW[w]={};PW[w][name]=0;
+    if(!PD[w])PD[w]={};if(!PD[w][name])PD[w][name]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};
+  });
+  saveData();renderPage();showToast('已添加成员 '+name);
+}
+function delMember(name){
+  name=decodeURIComponent(name);
+  if(!confirm('确认删除成员 '+name+'（将一并清除其所有积分记录）？'))return;
+  for(var g in GROUPS){var i=GROUPS[g].indexOf(name);if(i>=0)GROUPS[g].splice(i,1);}
+  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
+  for(var m in monthlyData)delete monthlyData[m][name];
+  if(totalData)delete totalData[name];
+  saveData();renderPage();showToast('已删除成员 '+name);
+}
+// 每周积分
+function addPW(wk){if(!requireAdmin())return;if(!PW[wk])PW[wk]={};PW[wk][_uniq(PW[wk],'新成员')]=0;weeklySelected=wk;saveData();renderPage();showToast('已添加一行');}
+function delPW(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 的本项积分？'))return;delete PW[wk][name];saveData();renderPage();showToast('已删除');}
+// 本周积分构成
+function addPD(wk){if(!requireAdmin())return;if(!PD[wk])PD[wk]={};PD[wk][_uniq(PD[wk],'新成员')]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};detailWeek=wk;saveData();renderPage();showToast('已添加一行');}
+function delPD(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 的积分构成？'))return;delete PD[wk][name];saveData();renderPage();showToast('已删除');}
+// 每日记录 / 每日积分（DD）
+function addDDDay(wk){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};var d=_uniq(DD[wk],'新日期');DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};saveData();renderPage();showToast('已添加新日期');}
+function delDDDay(wk,day){if(!requireAdmin())return;day=decodeURIComponent(day);if(!confirm('确认删除 '+day+' 当天全部记录？'))return;delete DD[wk][day];saveData();renderPage();showToast('已删除');}
+function addDDItem(wk,day,grp){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};if(!DD[wk][day])DD[wk][day]={'第一组':{},'第二组':{},'第三组':{}};DD[wk][day][grp][_uniq(DD[wk][day][grp]||{},'新成员')]=0;saveData();renderPage();showToast('已添加一条');}
+function delDDItem(wk,day,grp,name){if(!requireAdmin())return;day=decodeURIComponent(day);name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 在'+day+'的该项记录？'))return;delete DD[wk][day][grp][name];saveData();renderPage();showToast('已删除');}
+// 优秀日报 / 每周之星 / 每月之星（数组型）
+function addDB(){if(!requireAdmin())return;DB.push({week:'W?',date:'新日期',name:'新成员',score:0,group:''});saveData();renderPage();showToast('已添加一行');}
+function delDB(i){if(!requireAdmin())return;if(!confirm('确认删除这条优秀日报？'))return;DB.splice(i,1);saveData();renderPage();showToast('已删除');}
+function addStar(){if(!requireAdmin())return;stars.push({wk:'W?',name:'',group:''});saveData();renderPage();showToast('已添加一行');}
+function delStar(i){if(!requireAdmin())return;if(!confirm('确认删除这条每周之星？'))return;stars.splice(i,1);saveData();renderPage();showToast('已删除');}
+function addMStar(){if(!requireAdmin())return;monthlyStars.push({month:'新月份',name:'',group:'',score:0});saveData();renderPage();showToast('已添加一行');}
+function delMStar(i){if(!requireAdmin())return;if(!confirm('确认删除这条每月之星？'))return;monthlyStars.splice(i,1);saveData();renderPage();showToast('已删除');}
+// 每月积分 / 总积分（名册级）
+function addMonthly(key){if(!requireAdmin())return;addMemberPrompt();}
+function delMonthly(name){if(!requireAdmin())return;delMember(name);}
+function addTotal(){if(!requireAdmin())return;addMemberPrompt();}
+function delTotal(name){if(!requireAdmin())return;delMember(name);}
+// 团队维度明细（增删周）
+function addTDWeek(){if(!requireAdmin())return;var mx=0;Object.keys(TD).forEach(function(w){var n=parseInt(w.replace('W',''))||0;if(n>mx)mx=n;});var nw='W'+(mx+1);TD[nw]={'第一组':[0,0,0,0,0,0,0],'第二组':[0,0,0,0,0,0,0],'第三组':[0,0,0,0,0,0,0],star:''};saveData();renderPage();showToast('已添加'+nw);}
+function delTDWeek(w){if(!requireAdmin())return;if(!confirm('确认删除 '+w+' 的维度数据？'))return;delete TD[w];saveData();renderPage();showToast('已删除');}
+
+// ===== Supabase 配置 =====
+const SUPABASE_URL='https://njdcmlmbbfhwerzvnpul.supabase.co';
+const SUPABASE_KEY='sb_publishable__1q7fCzzXZiOmVJFXRIuMw_krFqfBx7';
+let supa=null;
+try{supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){console.warn('Supabase init failed:',e);}
+
+// ===== 数据 =====
+const GROUPS={'第一组':['康信','赵峰','崔猛','何玉洁','陈吉林','易正昂'],'第二组':['陈俊孝','谢鹏鑫','宁崧莹','王新宇','刘宗频','詹志恒'],'第三组':['李龙海','梁毓翰','黄思维','张高丰','张婕']};
+let TD={W1:{'第一组':[0,0,0,1,0,2,3],'第二组':[0,0,0,1,0,2,3],'第三组':[0,3,0,1,0,2,6],star:'李龙海'},W2:{'第一组':[13,3,0,2,0,7,25],'第二组':[11,0,0,2,0,7,20],'第三组':[6,3,0,2,0,7,18],star:'何玉洁'},W3:{'第一组':[13,3,0,3,0,12,31],'第二组':[11,0,0,3,0,12,26],'第三组':[6,6,0,3,0,12,27],star:'李龙海'},W4:{'第一组':[13,3,0,4,0,18,38],'第二组':[11,0,0,4,0,18,33],'第三组':[6,9,0,4,0,18,37],star:'李龙海'},W5:{'第一组':[6,0,0,0,5,11,22],'第二组':[2,0,0,0,5,7,14],'第三组':[3,0,0,0,5,8,16],star:'何玉洁'},W6:{'第一组':[3,0,0,0,0,5,8],'第二组':[3,0,0,0,0,5,8],'第三组':[1,3,0,0,0,5,9],star:'李龙海'}};
+const TCOLS=['课堂PK','每月挑战','项目实战','全组出勤','目标达成','日报按时','小计'];
+let PW={W1:{康信:3,何玉洁:7,赵峰:0,陈吉林:0,易正昂:2,崔猛:1,陈俊孝:2,宁崧莹:5,王新宇:5,刘宗频:1,谢鹏鑫:2,詹志恒:1,李龙海:8,张婕:1,梁毓翰:4,黄思维:1,张高丰:0},W2:{康信:10,何玉洁:14,赵峰:1,陈吉林:4,易正昂:7,崔猛:2,陈俊孝:15,宁崧莹:6,王新宇:7,刘宗频:5,谢鹏鑫:6,詹志恒:5,李龙海:20,张婕:1,梁毓翰:9,黄思维:3,张高丰:3},W3:{康信:2,何玉洁:6,赵峰:1,陈吉林:1,易正昂:2,崔猛:1,陈俊孝:2,宁崧莹:1,王新宇:4,刘宗频:2,谢鹏鑫:1,詹志恒:2,李龙海:5,张婕:1,梁毓翰:2,黄思维:3,张高丰:2},W4:{康信:2,何玉洁:11,赵峰:0,陈吉林:0,易正昂:0,崔猛:0,陈俊孝:0,宁崧莹:2,王新宇:2,刘宗频:0,谢鹏鑫:1,詹志恒:0,李龙海:12,张婕:2,梁毓翰:2,黄思维:0,张高丰:0},W5:{康信:5,何玉洁:10,赵峰:0,陈吉林:1,易正昂:2,崔猛:0,陈俊孝:0,宁崧莹:0,王新宇:5,刘宗频:1,谢鹏鑫:5,詹志恒:4,李龙海:9,张婕:2,梁毓翰:8,黄思维:0,张高丰:0},W6:{康信:2,赵峰:2,崔猛:4,何玉洁:6,陈吉林:0,易正昂:0,陈俊孝:0,宁崧莹:0,王新宇:2,刘宗频:0,谢鹏鑫:0,詹志恒:6,李龙海:9,张婕:0,梁毓翰:2,黄思维:0,张高丰:0}};
+let DD={W1:{'7月2日':{第一组:{康信:3,何玉洁:3,易正昂:2,崔猛:1},第二组:{陈俊孝:2,宁崧莹:5,王新宇:3,刘宗频:1,谢鹏鑫:2,詹志恒:1},第三组:{李龙海:5,张婕:1,梁毓翰:2,黄思维:1}},'7月3日':{第一组:{何玉洁:2},第二组:{},第三组:{}}},W2:{'7月6日':{第一组:{何玉洁:1},第二组:{陈俊孝:4,宁崧莹:1},第三组:{李龙海:2,黄思维:1}},'7月7日':{第一组:{何玉洁:2,陈吉林:1,易正昂:1},第二组:{刘宗频:1,詹志恒:1},第三组:{李龙海:4,张高丰:1}},'7月8日':{第一组:{康信:1,何玉洁:1},第二组:{},第三组:{李龙海:3}},'7月9日':{第一组:{康信:3,何玉洁:3,易正昂:2,崔猛:1},第二组:{陈俊孝:7,宁崧莹:3,王新宇:4,刘宗频:3,谢鹏鑫:5,詹志恒:3},第三组:{李龙海:5,张婕:1,梁毓翰:5,黄思维:2}},'7月10日':{第一组:{康信:3,何玉洁:2,赵峰:1,陈吉林:3,易正昂:3,崔猛:1},第二组:{陈俊孝:2,宁崧莹:1,王新宇:1,刘宗频:1,谢鹏鑫:1,詹志恒:1},第三组:{李龙海:2,梁毓翰:1,张高丰:1}},'7月11日':{第一组:{康信:3,何玉洁:3,易正昂:1},第二组:{陈俊孝:2,宁崧莹:1},第三组:{李龙海:1,梁毓翰:1,张高丰:1}}},W3:{'7月13日':{第一组:{康信:1,何玉洁:2,易正昂:1},第二组:{陈俊孝:1},第三组:{黄思维:2}},'7月14日':{第一组:{},第二组:{},第三组:{}},'7月15日':{第一组:{康信:1,何玉洁:2,赵峰:1,陈吉林:1,易正昂:1,崔猛:1},第二组:{陈俊孝:1,宁崧莹:1,王新宇:2,刘宗频:2,谢鹏鑫:1,詹志恒:2},第三组:{李龙海:2,张婕:1,黄思维:1,张高丰:2}},'7月16日':{第一组:{},第二组:{},第三组:{}},'7月17日':{第一组:{},第二组:{},第三组:{}}},W4:{'7月20日':{第一组:{何玉洁:2},第二组:{},第三组:{李龙海:2}},'7月21日':{第一组:{何玉洁:2},第二组:{},第三组:{}},'7月22日':{第一组:{康信:2,何玉洁:2},第二组:{宁崧莹:2,谢鹏鑫:1},第三组:{李龙海:4}},'7月23日':{第一组:{何玉洁:2},第二组:{},第三组:{李龙海:2}},'7月24日':{第一组:{},第二组:{},第三组:{张婕:2}},'7月25日':{第一组:{何玉洁:1},第二组:{},第三组:{李龙海:1}}},W5:{'7月28日':{第一组:{康信:1,何玉洁:4,陈吉林:1,易正昂:2},第二组:{王新宇:3,刘宗频:1,谢鹏鑫:3,詹志恒:2},第三组:{李龙海:2,梁毓翰:2}},'7月29日':{第一组:{何玉洁:2},第二组:{},第三组:{}},'7月30日':{第一组:{康信:2,何玉洁:2},第二组:{谢鹏鑫:2},第三组:{李龙海:2,梁毓翰:2}},'7月31日':{第一组:{康信:2},第二组:{詹志恒:2},第三组:{李龙海:2}},'8月1日':{第一组:{},第二组:{},第三组:{张婕:2,梁毓翰:2}}},W6:{'8月3日':{第一组:{},第二组:{},第三组:{李龙海:2}},'8月4日':{第一组:{崔猛:2,赵峰:2,何玉洁:2,康信:2},第二组:{},第三组:{}},'8月5日':{第一组:{},第二组:{詹志恒:2},第三组:{}},'8月6日':{第一组:{崔猛:2},第二组:{},第三组:{}},'8月7日':{第一组:{何玉洁:2},第二组:{},第三组:{}},'8月8日':{第一组:{},第二组:{詹志恒:2},第三组:{李龙海:2}}}};
+// PD=个人每周积分明细(Personal Detail): a=A类角色,sp=发言,an=回答,ho=主持,re=反思,di=日报,st=之星,t=合计
+let PD={
+W1:{康信:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3},何玉洁:{a:2,sp:3,an:0,ho:0,re:0,di:0,st:2,t:7},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},崔猛:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈俊孝:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},宁崧莹:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:2,t:5},王新宇:{a:2,sp:3,an:0,ho:0,re:0,di:0,st:0,t:5},刘宗频:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},谢鹏鑫:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},詹志恒:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},李龙海:{a:3,sp:3,an:0,ho:0,re:0,di:2,st:0,t:8},张婕:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},梁毓翰:{a:2,sp:2,an:0,ho:0,re:0,di:0,st:0,t:4},黄思维:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},
+W2:{康信:{a:0,sp:10,an:0,ho:0,re:0,di:0,st:0,t:10},何玉洁:{a:2,sp:12,an:0,ho:0,re:0,di:0,st:0,t:14},赵峰:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈吉林:{a:0,sp:2,an:0,ho:0,re:0,di:2,st:0,t:4},易正昂:{a:0,sp:7,an:0,ho:0,re:0,di:0,st:0,t:7},崔猛:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},陈俊孝:{a:0,sp:11,an:0,ho:0,re:0,di:0,st:4,t:15},宁崧莹:{a:0,sp:6,an:0,ho:0,re:0,di:0,st:0,t:6},王新宇:{a:2,sp:5,an:0,ho:0,re:0,di:0,st:0,t:7},刘宗频:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},谢鹏鑫:{a:0,sp:6,an:0,ho:0,re:0,di:0,st:0,t:6},詹志恒:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},李龙海:{a:3,sp:9,an:0,ho:0,re:0,di:8,st:0,t:20},张婕:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},梁毓翰:{a:2,sp:4,an:0,ho:3,re:0,di:0,st:0,t:9},黄思维:{a:0,sp:1,an:0,ho:0,re:0,di:2,st:0,t:3},张高丰:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3}},
+W3:{康信:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},何玉洁:{a:2,sp:4,an:0,ho:0,re:0,di:0,st:0,t:6},赵峰:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈吉林:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},易正昂:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},崔猛:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈俊孝:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},宁崧莹:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},王新宇:{a:2,sp:2,an:0,ho:0,re:0,di:0,st:0,t:4},刘宗频:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},谢鹏鑫:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},詹志恒:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},李龙海:{a:3,sp:2,an:0,ho:0,re:0,di:0,st:0,t:5},张婕:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3},张高丰:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2}},
+W4:{康信:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},何玉洁:{a:2,sp:1,an:0,ho:0,re:0,di:8,st:0,t:11},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},王新宇:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},刘宗频:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},谢鹏鑫:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},詹志恒:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},李龙海:{a:3,sp:3,an:0,ho:0,re:0,di:6,st:0,t:12},张婕:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},
+W5:{康信:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},何玉洁:{a:2,sp:8,an:0,ho:0,re:0,di:0,st:0,t:10},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈吉林:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},易正昂:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},王新宇:{a:2,sp:3,an:0,ho:0,re:0,di:0,st:0,t:5},刘宗频:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},谢鹏鑫:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},詹志恒:{a:0,sp:4,an:0,ho:0,re:0,di:0,st:0,t:4},李龙海:{a:3,sp:6,an:0,ho:0,re:0,di:0,st:0,t:9},张婕:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},梁毓翰:{a:2,sp:6,an:0,ho:0,re:0,di:0,st:0,t:8},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},
+W6:{康信:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:0,t:4},何玉洁:{a:2,sp:0,an:0,ho:0,re:0,di:4,st:0,t:6},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},王新宇:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},刘宗频:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},谢鹏鑫:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},詹志恒:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:2,t:6},李龙海:{a:3,sp:0,an:0,ho:0,re:0,di:4,st:2,t:9},张婕:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}}
+};
+
+// 优秀日报记录
+let DB=[
+  {week:'W6',date:'8月3日',name:'李龙海',score:19,group:'第三组'},
+  {week:'W6',date:'8月4日',name:'崔猛',score:20,group:'第一组'},
+  {week:'W6',date:'8月4日',name:'赵峰',score:20,group:'第一组'},
+  {week:'W6',date:'8月4日',name:'何玉洁',score:20,group:'第一组'},
+  {week:'W6',date:'8月4日',name:'康信',score:20,group:'第一组'},
+  {week:'W6',date:'8月5日',name:'詹志恒',score:20,group:'第二组'},
+  {week:'W6',date:'8月6日',name:'崔猛',score:18,group:'第一组'},
+  {week:'W6',date:'8月7日',name:'何玉洁',score:20,group:'第一组'},
+  {week:'W6',date:'8月8日',name:'詹志恒',score:19,group:'第二组'},
+  {week:'W6',date:'8月8日',name:'李龙海',score:19,group:'第三组'}
+];
+
+// 每周之星数据
+let stars=[{wk:'W1',name:'李龙海',group:'第三组'},{wk:'W2',name:'何玉洁',group:'第一组'},{wk:'W3',name:'李龙海',group:'第三组'},{wk:'W4',name:'李龙海',group:'第三组'},{wk:'W5',name:'何玉洁',group:'第一组'},{wk:'W6',name:'李龙海',group:'第三组'}];
+
+// 每月之星数据
+let monthlyStars=[
+  {month:'7月',name:'李龙海',group:'第三组',score:73},
+  {month:'8月',name:'',group:'',score:0}
+];
+
+// 独立编辑数据（每月积分/总积分/总览统计）
+let monthlyData={}; // {'7月':{name:score,...}, '8月':{...}}
+let totalData={}; // {name:score,...}
+let overviewData={}; // {totalPersonal, stage2Total, studentCount, weekCount}
+
+// 云端数据（知识库/通知/记录）
+let cloudData={knowledge:[],notices:[],records:[]};
+
+// ===== 数据持久化 =====
+function saveData(){
+  try{
+    localStorage.setItem('fy_td',JSON.stringify(TD));
+    localStorage.setItem('fy_pw',JSON.stringify(PW));
+    localStorage.setItem('fy_dd',JSON.stringify(DD));
+    localStorage.setItem('fy_pd',JSON.stringify(PD));
+    localStorage.setItem('fy_db',JSON.stringify(DB));
+    localStorage.setItem('fy_stars',JSON.stringify(stars));
+    localStorage.setItem('fy_monthly_stars',JSON.stringify(monthlyStars));
+    localStorage.setItem('fy_monthly_data',JSON.stringify(monthlyData));
+    localStorage.setItem('fy_total_data',JSON.stringify(totalData));
+    localStorage.setItem('fy_overview_data',JSON.stringify(overviewData));
+  }catch(e){}
+}
+function loadData(){
+  try{
+    var d;
+    d=localStorage.getItem('fy_td');if(d)TD=JSON.parse(d);
+    d=localStorage.getItem('fy_pw');if(d)PW=JSON.parse(d);
+    d=localStorage.getItem('fy_dd');if(d)DD=JSON.parse(d);
+    d=localStorage.getItem('fy_pd');if(d)PD=JSON.parse(d);
+    d=localStorage.getItem('fy_db');if(d){DB.length=0;DB.push.apply(DB,JSON.parse(d));}
+    d=localStorage.getItem('fy_stars');if(d)stars=JSON.parse(d);
+    d=localStorage.getItem('fy_monthly_stars');if(d)monthlyStars=JSON.parse(d);
+    d=localStorage.getItem('fy_monthly_data');if(d)monthlyData=JSON.parse(d);
+    d=localStorage.getItem('fy_total_data');if(d)totalData=JSON.parse(d);
+    d=localStorage.getItem('fy_overview_data');if(d)overviewData=JSON.parse(d);
+  }catch(e){}
+}
+
+// ===== 云端数据加载 =====
+async function loadCloudData(){
+  if(!supa)return;
+  try{
+    var [kb,nr,rc]=await Promise.all([
+      supa.from('knowledge_base').select('*'),
+      supa.from('notices').select('*'),
+      supa.from('general_records').select('*')
+    ]);
+    if(kb&&kb.data)cloudData.knowledge=kb.data;
+    if(nr&&nr.data)cloudData.notices=nr.data;
+    if(rc&&rc.data)cloudData.records=rc.data;
+  }catch(e){console.warn('Cloud load failed:',e);}
+}
+
+// ===== 辅助函数 =====
+function getGroup(name){for(let g in GROUPS)if(GROUPS[g].includes(name))return g;return '';}
+function getAllNames(){let a=[];for(let g in GROUPS)a.push(...GROUPS[g]);return a;}
+function getTotalByWeek(name,wks){let s=0;wks.forEach(w=>{if(PW[w]&&PW[w][name]!==undefined)s+=PW[w][name];});return s;}
+function rankClass(i){return i===0?'r1':i===1?'r2':i===2?'r3':'r4';}
+function medalIcon(i){return i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);}
+function nowStr(){return new Date().toLocaleString('zh-CN',{hour12:false}).replace(/\//g,'-');}
+function showToast(msg){var t=document.createElement('div');t.textContent=msg;t.className='toast';document.body.appendChild(t);setTimeout(function(){t.style.opacity='0';setTimeout(function(){document.body.removeChild(t);},300);},1800);}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function openModal(id){document.getElementById(id).classList.add('show');}
+
+// 团队第一阶段最终排名(W4小计)
+function getStage1Rank(){
+  let arr=Object.keys(GROUPS).map(g=>({name:g,score:['W1','W2','W3','W4'].reduce((s,w)=>s+TD[w][g][6],0)}));
+  arr.sort((a,b)=>b.score-a.score);return arr;
+}
+// 团队第二阶段排名(W5+W6)
+function getStage2Rank(){
+  let arr=Object.keys(GROUPS).map(g=>({name:g,score:(TD.W5[g][6]||0)+(TD.W6?TD.W6[g][6]:0)}));
+  arr.sort((a,b)=>b.score-a.score);return arr;
+}
+
+// ===== 等级段位系统（游戏化，参考 Keep/Duolingo）=====
+const LEVELS=[
+  {name:'青铜',icon:'🥉',min:0,color:'#cd7f32'},
+  {name:'白银',icon:'🥈',min:30,color:'#9ca3af'},
+  {name:'黄金',icon:'🥇',min:55,color:'#f5b301'},
+  {name:'铂金',icon:'💎',min:75,color:'#06b6d4'},
+  {name:'王者',icon:'👑',min:95,color:'#a855f7'}
+];
+function getLevel(score){
+  let lv=LEVELS[0];
+  for(let i=0;i<LEVELS.length;i++){if(score>=LEVELS[i].min)lv=LEVELS[i];}
+  let next=LEVELS.find(l=>l.min>score);
+  let prog=100,need=0;
+  if(next){need=next.min-score;prog=Math.round((score-lv.min)/(next.min-lv.min)*100);}
+  prog=Math.max(0,Math.min(100,prog));
+  return {icon:lv.icon,name:lv.name,color:lv.color,min:lv.min,nextName:next?next.name:'',nextIcon:next?next.icon:lv.icon,need:need,prog:prog};
+}
+function levelBadge(score){var l=getLevel(score);return '<span class="lv-badge" style="background:'+l.color+'">'+l.icon+l.name+'</span>';}
+
+// ===== 导航结构 =====
+const NAV=[
+  {id:'overview',icon:'📊',label:'数据总览'},
+  {id:'team',icon:'👥',label:'团队积分'},
+  {id:'personal',icon:'🏆',label:'个人积分',children:[
+    {id:'p-weekly',label:'每周积分'},
+    {id:'p-monthly',label:'每月积分'},
+    {id:'p-total',label:'总积分排行'},
+    {id:'p-daily',label:'每日积分'}
+  ]},
+  {id:'daily-detail',icon:'📋',label:'每日明细'},
+  {id:'honor',icon:'⭐',label:'荣誉殿堂',children:[
+    {id:'h-weekly',label:'每周之星'},{id:'h-monthly',label:'每月之星'},
+    {id:'h-champ',label:'阶段冠军'}
+  ]},
+  {id:'compare',icon:'🔍',label:'对比分析'},
+  {id:'trend',icon:'📈',label:'趋势图表'},
+  {id:'knowledge',icon:'📚',label:'知识库'},
+  {id:'notices',icon:'📢',label:'通知文件'},
+  {id:'records',icon:'📝',label:'记录'},
+  {id:'search',icon:'🔍',label:'全局搜索'},
+  {id:'profile',icon:'👤',label:'学员档案'},
+  {id:'export',icon:'📤',label:'数据导出'}
+];
+
+let currentPage='overview';
+
+// ===== 渲染导航 =====
+function renderNav(){
+  const tree=document.getElementById('navTree');
+  let html='';
+  NAV.forEach(item=>{
+    const hasChildren=item.children&&item.children.length>0;
+    const isLeaf=!hasChildren;
+    const isActive=isLeaf&&item.id===currentPage;
+    let childOpen=false;
+    if(hasChildren)childOpen=item.children.some(c=>c.id===currentPage);
+    html+=`<div class="nav-item">`;
+    html+=`<div class="nav-label${isActive?' active':''}" data-id="${item.id}" data-has-children="${hasChildren}" onclick="navClick(this)">`;
+    html+=`<span class="icon">${item.icon}</span>`;
+    html+=`<span>${item.label}</span>`;
+    if(hasChildren)html+=`<span class="arrow${childOpen?' open':''}">▶</span>`;
+    html+=`</div>`;
+    if(hasChildren){
+      html+=`<div class="nav-children${childOpen?' open':''}">`;
+      item.children.forEach(c=>{
+        const cActive=c.id===currentPage;
+        html+=`<div class="nav-label${cActive?' active':''}" data-id="${c.id}" onclick="navClick(this)"><span>${c.label}</span></div>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  tree.innerHTML=html;
+}
+
+function navClick(el){
+  const id=el.dataset.id;
+  const hasChildren=el.dataset.hasChildren==='true';
+  if(hasChildren){
+    const children=el.nextElementSibling;
+    const arrow=el.querySelector('.arrow');
+    if(children){children.classList.toggle('open');if(arrow)arrow.classList.toggle('open');}
+  } else {
+    currentPage=id;
+    renderNav();
+    renderPage();
+  }
+}
+
+// ===== 页面渲染 =====
+function renderPage(){
+  const area=document.getElementById('contentArea');
+  let html='';
+  switch(currentPage){
+    case 'overview':html=pageOverview();break;
+    case 'team':html=pageTeam();break;
+    case 'p-weekly':html=pageWeekly();break;
+    case 'p-monthly':html=pageMonthly();break;
+    case 'p-total':html=pageTotal();break;
+    case 'p-daily':html=pageDaily('p-daily');break;
+    case 'daily-detail':html=pageDailyDetail();break;
+    case 'h-weekly':html=pageWeeklyStar();break;
+    case 'h-monthly':html=pageMonthlyStar();break;
+    case 'h-champ':html=pageChamp();break;
+    case 'compare':html=pageCompare();break;
+    case 'trend':html=pageTrend();break;
+    case 'knowledge':html=pageKnowledge();break;
+    case 'notices':html=pageNotices();break;
+    case 'records':html=pageRecords();break;
+    case 'search':html=pageSearch();break;
+    case 'profile':html=pageProfile();break;
+    case 'export':html=pageExport();break;
+    default:html='<div class="page-title">页面开发中...</div>';
+  }
+  area.innerHTML=`<div class="page active">${html}</div>`;
+  if(currentPage==='p-weekly')bindWeeklyFilter();
+  if(currentPage==='p-daily')bindDailyFilter();
+  if(currentPage==='daily-detail')bindDetailFilter();
+  if(currentPage==='compare')initCompare();
+  if(currentPage==='trend')initTrend();
+  if(currentPage==='profile')bindProfile();
+  if(currentPage==='search')doSearch();
+}
+
+// === 数据总览 ===
+function pageOverview(){
+  const names=getAllNames();
+  let totalPersonal=0;
+  for(let w in PW)for(let n in PW[w])totalPersonal+=PW[w][n];
+  var stage2Total=(TD.W5['第一组'][6]+TD.W5['第二组'][6]+TD.W5['第三组'][6])+(TD.W6?TD.W6['第一组'][6]+TD.W6['第二组'][6]+TD.W6['第三组'][6]:0);
+  // Use override data if available
+  if(overviewData.totalPersonal!==undefined)totalPersonal=overviewData.totalPersonal;
+  if(overviewData.stage2Total!==undefined)stage2Total=overviewData.stage2Total;
+  var studentCount=overviewData.studentCount!==undefined?overviewData.studentCount:names.length;
+  var weekCount=overviewData.weekCount!==undefined?overviewData.weekCount:6;
+  const s1=getStage1Rank();
+  const s2=getStage2Rank();
+  var ovEdit=editSections['overview-list'];
+  let h='<div class="page-title">📊 数据总览 '+editBtn('overview-list')+'</div>';
+  h+='<div class="stat-row">';
+  if(ovEdit){
+    h+='<div class="stat-card"><div class="num">'+numInput('ov_totalPersonal',totalPersonal)+'</div><div class="lbl">个人积分总计</div></div>';
+    h+='<div class="stat-card"><div class="num">'+numInput('ov_stage2Total',stage2Total)+'</div><div class="lbl">二阶段团队积分</div></div>';
+    h+='<div class="stat-card"><div class="num">'+numInput('ov_studentCount',studentCount)+'</div><div class="lbl">学员数</div></div>';
+    h+='<div class="stat-card"><div class="num">'+numInput('ov_weekCount',weekCount)+'</div><div class="lbl">培训周数</div></div>';
+  } else {
+    h+='<div class="stat-card"><div class="num">'+totalPersonal+'</div><div class="lbl">个人积分总计</div></div>';
+    h+='<div class="stat-card"><div class="num">'+stage2Total+'</div><div class="lbl">二阶段团队积分</div></div>';
+    h+='<div class="stat-card"><div class="num">'+studentCount+'</div><div class="lbl">学员数</div></div>';
+    h+='<div class="stat-card"><div class="num">'+weekCount+'</div><div class="lbl">培训周数</div></div>';
+  }
+  h+='</div>';
+  h+=`<div class="banner"><div class="medal">👑</div><div class="info"><div class="t">第一阶段冠军</div><div class="v">${s1[0].name} ${s1[0].score}分</div></div></div>`;
+  h+=`<div class="card"><div class="card-title">🏅 第二阶段排名</div>`;
+  s2.forEach((r,i)=>{
+    h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${medalIcon(i)}</div><div class="rank-name">${r.name}</div><div class="rank-score">${r.score}分${levelBadge(r.score)}</div></div>`;
+  });
+  h+=`</div>`;
+  // 每周之星速览
+  h+=`<div class="card"><div class="card-title">🌟 每周之星</div>`;
+  stars.forEach(s=>{
+    h+=`<div class="rank-row"><div class="rank-name">${s.wk}</div><div class="rank-name" style="text-align:right">${s.name||'(待评选)'} ${s.group||''}</div></div>`;
+  });
+  h+=`</div>`;
+  // 段位分布（参考 BI 分布统计）
+  var wksAll=['W1','W2','W3','W4','W5','W6'];
+  var dist={};
+  getAllNames().forEach(function(n){var l=getLevel(getTotalByWeek(n,wksAll));dist[l.name]=(dist[l.name]||0)+1;});
+  h+='<div class="card"><div class="card-title">🏅 段位分布</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  LEVELS.forEach(function(l){h+='<span class="lv-badge" style="background:'+l.color+'">'+l.icon+l.name+' '+(dist[l.name]||0)+'人</span>';});
+  h+='</div></div>';
+  return h;
+}
+
+// === 团队积分 ===
+function pageTeam(){
+  const s1=getStage1Rank();
+  const s2=getStage2Rank();
+  var TDWEEKS=Object.keys(TD).sort(function(a,b){return parseInt(a.slice(1))-parseInt(b.slice(1));});
+  let h=`<div class="page-title">👥 团队积分</div>`;
+  h+=`<div class="card"><div class="card-title">🏆 第一阶段排名 (W1-W4)</div>`;
+  s1.forEach((r,i)=>{
+    h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${medalIcon(i)}</div><div class="rank-name">${r.name}</div><div class="rank-score">${r.score}分${levelBadge(r.score)}</div></div>`;
+  });
+  h+=`</div>`;
+  h+=`<div class="card"><div class="card-title">🔥 第二阶段排名 (W5-W6)</div>`;
+  s2.forEach((r,i)=>{
+    h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${medalIcon(i)}</div><div class="rank-name">${r.name}</div><div class="rank-score">${r.score}分${levelBadge(r.score)}</div></div>`;
+  });
+  h+=`</div>`;
+  h+=`<div class="card"><div class="card-title">📋 各周积分明细</div>`;
+  h+=`<table class="simple-table"><tr><th>周次</th><th>第一组</th><th>第二组</th><th>第三组</th></tr>`;
+  TDWEEKS.forEach(w=>{
+    h+=`<tr><td style="font-weight:600">${w}</td>`;
+    ['第一组','第二组','第三组'].forEach(function(g){
+      var sv=TD[w][g][6];
+      h+='<td>'+sv+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+=`</table></div>`;
+  // 维度明细表
+  h+=`<div class="card"><div class="card-title">📊 维度明细 ${editBtn('td-detail', abBtn('➕添加周','addTDWeek()'))}</div>`;
+  var tdEdit=editSections['td-detail'];
+  h+=`<div class="detail-table-wrap"><table class="simple-table" style="font-size:11px;min-width:500px">`;
+  h+=`<tr><th>周次</th>`;
+  TCOLS.forEach(function(c){h+=`<th>${c}</th>`;});
+  h+=`</tr>`;
+  TDWEEKS.forEach(function(w){
+    h+=`<tr><td style="font-weight:600">${w}`+(tdEdit?' <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:9px" onclick="delTDWeek(\''+w+'\')">🗑</button>':'')+`</td>`;
+    for(var ci=0;ci<TCOLS.length;ci++){
+      ['第一组','第二组','第三组'].forEach(function(g){
+        var v=TD[w][g][ci];
+        if(tdEdit){
+          h+='<td>'+numInput('td_'+w+'_'+g+'_'+ci,v)+'</td>';
+        } else if(TCOLS[ci]==='小计'){
+          h+='<td style="font-weight:600;color:#1890ff">'+v+'</td>';
+        } else {
+          h+='<td'+(v>0?' style="color:#52c41a;font-weight:600"':'')+'>'+v+'</td>';
+        }
+      });
+    }
+    h+='</tr>';
+  });
+  if(tdEdit){
+    h+='<tr><td style="font-weight:600">之星</td><td colspan="'+(TCOLS.length*3)+'">';
+    TDWEEKS.forEach(function(w){
+      h+='<span style="display:inline-block;margin-right:6px;font-size:10px">'+w+': '+textInput('td_star_'+w,TD[w].star||'')+'</span>';
+    });
+    h+='</td></tr>';
+  }
+  h+=`</table></div></div>`;
+  return h;
+}
+
+// === 每周积分 ===
+let weeklySelected='W1';
+function pageWeekly(){
+  let h=`<div class="page-title">🏆 每周积分 ${editBtn('pw-list', abBtn('➕添加成员','addMemberPrompt()'))}</div>`;
+  h+=`<div class="filter-bar">`;
+  ['W1','W2','W3','W4','W5','W6'].forEach(w=>{h+=`<div class="filter-btn${w===weeklySelected?' active':''}" data-week="${w}">${w}</div>`;});
+  h+=`</div>`;
+  h+=`<div id="weeklyList">${renderWeeklyList(weeklySelected)}</div>`;
+  return h;
+}
+function renderWeeklyList(wk){
+  const data=PW[wk];
+  let arr=[];
+  for(let n in data)arr.push({name:n,score:data[n],group:getGroup(n)});
+  arr.sort((a,b)=>b.score-a.score);
+  let h='';
+  var pwEdit=editSections['pw-list'];
+  arr.forEach((r,i)=>{
+    if(pwEdit){
+      h+='<div class="rank-row"><div class="rank-num '+rankClass(i)+'">'+medalIcon(i)+'</div><div class="rank-name">'+textInput('pw_name_'+r.name,r.name)+'</div><div class="rank-group">'+textInput('pw_group_'+r.name,r.group)+'</div><div class="rank-score">'+numInput('pw_'+r.name,r.score)+' <button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px;margin-left:4px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删</button></div></div>';
+    } else {
+      h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${medalIcon(i)}</div><div class="rank-name">${r.name}</div><div class="rank-group">${r.group}</div><div class="rank-score">${r.score}${levelBadge(r.score)}</div></div>`;
+    }
+  });
+  return h;
+}
+function bindWeeklyFilter(){
+  document.querySelectorAll('.filter-btn[data-week]').forEach(btn=>{
+    btn.onclick=function(){
+      weeklySelected=this.dataset.week;
+      document.querySelectorAll('.filter-btn[data-week]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('weeklyList').innerHTML=renderWeeklyList(weeklySelected);
+    };
+  });
+}
+
+// === 每月积分 ===
+function pageMonthly(){
+  const names=getAllNames();
+  const months=[
+    {label:'7月',key:'7月',wks:['W1','W2','W3','W4']},
+    {label:'8月',key:'8月',wks:['W5','W6']}
+  ];
+  var mEdit=editSections['monthly-list'];
+  let h='<div class="page-title">🏆 每月积分 '+editBtn('monthly-list', abBtn('➕添加成员','addMemberPrompt()'))+'</div>';
+  months.forEach(m=>{
+    var mData=monthlyData[m.key];
+    let arr=names.map(n=>{
+      var score=mData&&mData[n]!==undefined?mData[n]:getTotalByWeek(n,m.wks);
+      return{name:n,score:score,group:getGroup(n)};
+    });
+    arr.sort((a,b)=>b.score-a.score);
+    h+='<div class="card"><div class="card-title">📅 '+m.label+'</div>';
+    if(mEdit){
+      h+='<table class="simple-table"><tr><th>姓名</th><th>组别</th><th>分数</th><th>操作</th></tr>';
+      arr.forEach(function(r){
+        h+='<tr><td>'+textInput('m_name_'+m.key+'_'+r.name,r.name)+'</td><td>'+textInput('m_group_'+m.key+'_'+r.name,r.group)+'</td><td>'+numInput('m_score_'+m.key+'_'+r.name,r.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删除</button></td></tr>';
+      });
+      h+='</table><div style="margin-top:6px"><button class="btn btn-primary btn-sm" onclick="addMemberPrompt()">➕ 添加成员</button></div>';
+    } else {
+      arr.slice(0,10).forEach((r,i)=>{
+        h+='<div class="rank-row"><div class="rank-num '+rankClass(i)+'">'+medalIcon(i)+'</div><div class="rank-name">'+r.name+'</div><div class="rank-group">'+r.group+'</div><div class="rank-score">'+r.score+levelBadge(r.score)+'</div></div>';
+      });
+    }
+    h+='</div>';
+  });
+  return h;
+}
+
+// === 总积分排行 ===
+function pageTotal(){
+  const names=getAllNames();
+  const wks=['W1','W2','W3','W4','W5','W6'];
+  var tEdit=editSections['total-list'];
+  let arr=names.map(n=>{
+    var score=totalData[n]!==undefined?totalData[n]:getTotalByWeek(n,wks);
+    return{name:n,score:score,group:getGroup(n)};
+  });
+  arr.sort((a,b)=>b.score-a.score);
+  let h='<div class="page-title">🏆 总积分排行 '+editBtn('total-list', abBtn('➕添加成员','addMemberPrompt()'))+'</div>';
+  h+='<div class="card">';
+  if(tEdit){
+    h+='<table class="simple-table"><tr><th>姓名</th><th>组别</th><th>总分</th><th>操作</th></tr>';
+    arr.forEach(function(r){
+      h+='<tr><td>'+textInput('t_name_'+r.name,r.name)+'</td><td>'+textInput('t_group_'+r.name,r.group)+'</td><td>'+numInput('t_score_'+r.name,r.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删除</button></td></tr>';
+    });
+    h+='</table><div style="margin-top:6px"><button class="btn btn-primary btn-sm" onclick="addMemberPrompt()">➕ 添加成员</button></div>';
+  } else {
+    arr.forEach((r,i)=>{
+      h+='<div class="rank-row"><div class="rank-num '+rankClass(i)+'">'+medalIcon(i)+'</div><div class="rank-name">'+r.name+'</div><div class="rank-group">'+r.group+'</div><div class="rank-score">'+r.score+levelBadge(r.score)+'</div></div>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+
+// === 每日积分 ===
+let dailySelected='W1';
+function pageDaily(pageId){
+  let title=pageId==='daily-detail'?'📋 每日明细':'🏆 每日积分';
+  let h='<div class="page-title">'+title+' '+editBtn('pdaily-list', abBtn('➕添加日期','addDDDay(\''+dailySelected+'\')'))+'</div>';
+  h+='<div class="filter-bar">';
+  ['W1','W2','W3','W4','W5','W6'].forEach(w=>{h+='<div class="filter-btn'+(w===dailySelected?' active':'')+'" data-dweek="'+w+'">'+w+'</div>';});
+  h+='</div>';
+  h+='<div id="dailyList">'+renderDailyList(dailySelected)+'</div>';
+  return h;
+}
+function renderDailyList(wk){
+  const data=DD[wk];
+  var dlEdit=editSections['pdaily-list'];
+  let h='';
+  for(let day in data){
+    if(dlEdit){
+      h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+textInput('pdl_day_'+day,day)+
+         '<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>'+
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第二组\')">+二组</button>'+
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第三组\')">+三组</button></div><div class="day-items">';
+    } else {
+      h+='<div class="day-block"><div class="day-header">'+day+'</div><div class="day-items">';
+    }
+    for(let grp in data[day]){
+      for(let n in data[day][grp]){
+        if(dlEdit){
+          h+='<span class="day-tag">'+textInput('pdl_name_'+day+'_'+n,n)+'<span class="pts">'+numInput('pdl_'+day+'_'+n,data[day][grp][n])+'</span> <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:10px" onclick="delDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\''+grp+'\',\''+encodeURIComponent(n)+'\')">✕</button></span>';
+        } else {
+          h+='<span class="day-tag">'+n+'<span class="pts">+'+data[day][grp][n]+'</span></span>';
+        }
+      }
+    }
+    h+='</div></div>';
+  }
+  if(!h)h='<div style="color:#999;font-size:13px;text-align:center;padding:20px">暂无数据</div>';
+  return h;
+}
+function bindDailyFilter(){
+  document.querySelectorAll('.filter-btn[data-dweek]').forEach(btn=>{
+    btn.onclick=function(){
+      dailySelected=this.dataset.dweek;
+      document.querySelectorAll('.filter-btn[data-dweek]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('dailyList').innerHTML=renderDailyList(dailySelected);
+    };
+  });
+}
+
+// === 每日明细（增强版）===
+let detailWeek='W1';
+function pageDailyDetail(){
+  let h=`<div class="page-title">📋 每日明细</div>`;
+  h+=`<div class="filter-bar">`;
+  ['W1','W2','W3','W4','W5','W6'].forEach(w=>{h+=`<div class="filter-btn${w===detailWeek?' active':''}" data-dtweek="${w}">${w}</div>`;});
+  h+=`</div>`;
+  h+=`<div class="card"><div class="card-title">📝 每日记录 ${editBtn('dd-list', abBtn('➕添加日期','addDDDay(\''+detailWeek+'\')'))}</div><div id="detailDaily">${renderDetailDaily(detailWeek)}</div></div>`;
+  h+=`<div class="card"><div class="card-title">📊 本周积分构成 ${editBtn('pd-table', abBtn('➕添加成员','addMemberPrompt()'))}</div><div id="detailComp">${renderDetailComp(detailWeek)}</div></div>`;
+  h+=`<div class="card"><div class="card-title">📖 积分规则说明</div>${renderRules()}</div>`;
+  h+=`<div class="card"><div class="card-title">📝 优秀日报记录 ${editBtn('db-list', abBtn('➕添加','addDB()'))}</div>`;
+  var dbEdit=editSections['db-list'];
+  if(dbEdit){
+    h+='<table class="simple-table"><tr><th>周次</th><th>日期</th><th>姓名</th><th>组别</th><th>分数</th><th>操作</th></tr>';
+    DB.forEach(function(d,i){
+      h+='<tr><td>'+textInput('db_week_'+i,d.week)+'</td><td>'+textInput('db_date_'+i,d.date)+'</td><td>'+textInput('db_name_'+i,d.name)+'</td><td>'+textInput('db_group_'+i,d.group)+'</td><td>'+numInput('db_score_'+i,d.score)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 5px;font-size:10px" onclick="delDB('+i+')">删除</button></td></tr>';
+    });
+    h+='</table>';
+  } else {
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0">';
+    DB.forEach(function(d){
+      h+='<span class="day-tag" style="background:#f6ffed;border:1px solid #b7eb8e">'+d.date+' '+d.name+'<span class="pts" style="background:#52c41a;color:#fff">'+d.score+'</span></span>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+function renderDetailDaily(wk){
+  const data=DD[wk];
+  var ddEdit=editSections['dd-list'];
+  let h='';
+  for(let day in data){
+    if(ddEdit){
+      h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+textInput('dd_day_'+day,day)+
+         '<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>'+
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第二组\')">+二组</button>'+
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第三组\')">+三组</button></div><div class="day-items">';
+    } else {
+      h+='<div class="day-block"><div class="day-header">'+day+'</div><div class="day-items">';
+    }
+    for(let grp in data[day]){
+      for(let n in data[day][grp]){
+        if(ddEdit){
+          h+='<span class="day-tag">'+textInput('dd_name_'+day+'_'+n,n)+'<span class="pts">'+numInput('dd_'+day+'_'+n,data[day][grp][n])+'</span> <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:10px" onclick="delDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\''+grp+'\',\''+encodeURIComponent(n)+'\')">✕</button></span>';
+        } else {
+          h+='<span class="day-tag">'+n+'<span class="pts">+'+data[day][grp][n]+'</span></span>';
+        }
+      }
+    }
+    h+='</div></div>';
+  }
+  if(!h)h='<div style="color:#999;font-size:12px;text-align:center;padding:16px">暂无数据</div>';
+  return h;
+}
+function renderDetailComp(wk){
+  const pd=PD[wk];
+  if(!pd)return '<div style="color:#999;font-size:12px;text-align:center;padding:16px">'+wk+'暂无分类明细数据</div>';
+  var nameSet={};getAllNames().forEach(function(n){nameSet[n]=1;});if(pd)for(var kn in pd)nameSet[kn]=1;
+  var namesAll=Object.keys(nameSet);
+  var pdEdit=editSections['pd-table'];
+  let h='<div class="detail-table-wrap"><table class="detail-table">';
+  h+='<tr><th class="name-col">姓名</th><th class="cat-a">A角色</th><th class="cat-b">发言</th><th class="cat-b">回答</th><th class="cat-b">主持</th><th class="cat-b">反思</th><th class="cat-b">日报</th><th class="cat-b">之星</th><th class="subtotal-col">B小计</th><th class="total-col">合计</th></tr>';
+  let sA=0,sSp=0,sAn=0,sHo=0,sRe=0,sDi=0,sSt=0,sB=0,sT=0;
+  let arr=namesAll.map(n=>{
+    const d=pd[n]||{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};
+    const bSub=d.sp+d.an+d.ho+d.re+d.di+d.st;
+    return{name:n,a:d.a,sp:d.sp,an:d.an,ho:d.ho,re:d.re,di:d.di,st:d.st,bSub:bSub,total:d.t};
+  });
+  arr.sort((a,b)=>b.total-a.total);
+  arr.forEach(r=>{
+    sA+=r.a;sSp+=r.sp;sAn+=r.an;sHo+=r.ho;sRe+=r.re;sDi+=r.di;sSt+=r.st;sB+=r.bSub;sT+=r.total;
+    h+='<tr>';
+    h+='<td class="name-col">'+(pdEdit?(textInput('pd_name_'+r.name,r.name)+' <button class="btn btn-danger btn-sm" style="padding:1px 5px;font-size:10px" onclick="delMember(\''+encodeURIComponent(r.name)+'\')">删</button>'):r.name)+'</td>';
+    if(pdEdit){
+      h+='<td class="cat-a">'+numInput('pd_'+r.name+'_a',r.a)+'</td>';
+      h+='<td class="cat-b">'+numInput('pd_'+r.name+'_sp',r.sp)+'</td>';
+      h+='<td class="cat-b">'+numInput('pd_'+r.name+'_an',r.an)+'</td>';
+      h+='<td class="cat-b">'+numInput('pd_'+r.name+'_ho',r.ho)+'</td>';
+      h+='<td class="cat-b">'+numInput('pd_'+r.name+'_re',r.re)+'</td>';
+      h+='<td class="cat-b">'+numInput('pd_'+r.name+'_di',r.di)+'</td>';
+      h+='<td class="cat-b">'+numInput('pd_'+r.name+'_st',r.st)+'</td>';
+      h+='<td class="subtotal-col">'+r.bSub+'</td>';
+      h+='<td class="total-col">'+numInput('pd_'+r.name+'_t',r.total)+'</td>';
+    } else {
+      h+='<td class="cat-a">'+(r.a||'-')+'</td>';
+      h+='<td class="cat-b">'+(r.sp||'-')+'</td>';
+      h+='<td class="cat-b">'+(r.an||'-')+'</td>';
+      h+='<td class="cat-b">'+(r.ho||'-')+'</td>';
+      h+='<td class="cat-b">'+(r.re||'-')+'</td>';
+      h+='<td class="cat-b">'+(r.di||'-')+'</td>';
+      h+='<td class="cat-b">'+(r.st||'-')+'</td>';
+      h+='<td class="subtotal-col">'+r.bSub+'</td>';
+      h+='<td class="total-col">'+r.total+'</td>';
+    }
+    h+='</tr>';
+  });
+  h+='<tr class="sum-row">';
+  h+='<td class="name-col">合计</td>';
+  h+=`<td class="cat-a">${sA}</td><td class="cat-b">${sSp}</td><td class="cat-b">${sAn||'-'}</td><td class="cat-b">${sHo||'-'}</td><td class="cat-b">${sRe||'-'}</td><td class="cat-b">${sDi}</td><td class="cat-b">${sSt}</td><td class="subtotal-col">${sB}</td><td class="total-col">${sT}</td>`;
+  h+='</tr></table></div>';
+  h+=`<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;font-size:10px">`;
+  h+=`<span class="badge-a">A类:${sA}分</span><span class="badge-b">B类:${sB}分</span><span style="background:#f5f5f5;padding:1px 5px;border-radius:3px;color:#666">总计:${sT}分</span>`;
+  h+=`</div>`;
+  return h;
+}
+function renderRules(){
+  let h='';
+  h+=`<div class="rule-section"><div class="rule-title"><span class="badge-a">A</span> A·角色积分</div>`;
+  h+=`<div class="rule-items"><span>班长+3/周</span><span>班委+2/周</span></div></div>`;
+  h+=`<div class="rule-section"><div class="rule-title"><span class="badge-b">B</span> B·课堂表现</div>`;
+  h+=`<div class="rule-items"><span>主动发言+1/次(上限5次/周)</span><span>优秀回答+2/次</span><span>培训主持+3/次</span><span>课后反思+1/篇</span><span>优秀日报+2/次</span><span>今日之星+2/次</span></div></div>`;
+  h+=`<div class="rule-section"><div class="rule-title"><span class="badge-c">C</span> C·团队竞赛</div>`;
+  h+=`<div class="rule-items"><span>课堂PK:第1名+3/第2名+2/第3名+1</span><span>月度挑战冠军+5</span><span>项目实战优秀+8</span><span>全组出勤+1/周</span><span>目标达成+2/人</span><span>日报按时+1/天</span></div></div>`;
+  h+=`<div class="rule-section"><div class="rule-title"><span class="badge-d">D</span> D·特别贡献</div>`;
+  h+=`<div class="rule-items"><span>创新建议提交+2</span><span>创新建议被采纳+3</span></div></div>`;
+  h+=`<div class="rule-section"><div class="rule-title" style="color:#f5222d">⚠️ 扣分项</div>`;
+  h+=`<div class="rule-items"><span>迟到早退-1</span><span>旷课-3</span><span>玩手机-2</span></div></div>`;
+  return h;
+}
+function bindDetailFilter(){
+  document.querySelectorAll('.filter-btn[data-dtweek]').forEach(btn=>{
+    btn.onclick=function(){
+      detailWeek=this.dataset.dtweek;
+      document.querySelectorAll('.filter-btn[data-dtweek]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('detailDaily').innerHTML=renderDetailDaily(detailWeek);
+      document.getElementById('detailComp').innerHTML=renderDetailComp(detailWeek);
+    };
+  });
+}
+
+// === 每周之星 ===
+function pageWeeklyStar(){
+  let h='<div class="page-title">⭐ 每周之星 '+editBtn('stars-list', abBtn('➕添加','addStar()'))+'</div>';
+  h+='<div class="card"><div class="card-title">📖 评选规则</div>';
+  h+='<div style="font-size:12px;color:#666;line-height:1.8">';
+  h+='<p>1. 每周六24:00自动汇总本周数据</p>';
+  h+='<p>2. 本周个人积分最高者获评"每周之星"</p>';
+  h+='<p>3. 多人并列最高，均获评</p>';
+  h+='<p>4. 每周之星+3分，计入团队积分</p>';
+  h+='<p>5. 公示格式：🌟 第X周每周之星：XXX（XX分）！恭喜！</p>';
+  h+='</div></div>';
+  var stEdit=editSections['stars-list'];
+  if(stEdit){
+    h+='<div class="card"><div class="card-title">📝 编辑每周之星</div>';
+    h+='<table class="simple-table"><tr><th>周次</th><th>姓名</th><th>组别</th><th>操作</th></tr>';
+    stars.forEach(function(s,i){
+      h+='<tr><td>'+textInput('star_wk_'+i,s.wk)+'</td><td>'+textInput('star_name_'+i,s.name||'')+'</td><td>'+textInput('star_group_'+i,s.group||'')+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 5px;font-size:10px" onclick="delStar('+i+')">删除</button></td></tr>';
+    });
+    h+='</table></div>';
+  }
+  h+='<div class="star-cards">';
+  stars.forEach(function(s){
+    h+='<div class="star-card"><div class="emoji">🌟</div><div class="wk">'+s.wk+'</div><div class="nm">'+(s.name||'(待评选)')+'</div><div class="gr">'+(s.group||'')+'</div></div>';
+  });
+  h+='</div>';
+  var cnt={};
+  stars.forEach(function(s){if(s.name)cnt[s.name]=(cnt[s.name]||0)+1;});
+  if(Object.keys(cnt).length>0){
+    h+='<div class="card"><div class="card-title">🏅 之星次数</div>';
+    var arr=Object.entries(cnt).sort(function(a,b){return b[1]-a[1];});
+    arr.forEach(function(r){h+='<div class="rank-row"><div class="rank-name">'+r[0]+'</div><div class="rank-score">'+r[1]+'次</div></div>';});
+    h+='</div>';
+  }
+  return h;
+}
+
+// === 每月之星 ===
+function pageMonthlyStar(){
+  let h='<div class="page-title">⭐ 每月之星 '+editBtn('mstars-list', abBtn('➕添加','addMStar()'))+'</div>';
+  h+='<div class="card"><div class="card-title">📖 评选规则</div>';
+  h+='<div style="font-size:12px;color:#666;line-height:1.8">';
+  h+='<p>1. 每月最后一个工作日汇总当月数据</p>';
+  h+='<p>2. 当月个人积分累计最高者获评"每月之星"</p>';
+  h+='<p>3. 多人并列最高，均获评</p>';
+  h+='<p>4. 每月之星+10分，计入团队积分</p>';
+  h+='<p>5. 公示格式：🌟 X月每月之星：XXX（XX分）！恭喜！</p>';
+  h+='</div></div>';
+  var msEdit=editSections['mstars-list'];
+  if(msEdit){
+    h+='<div class="card"><div class="card-title">📝 编辑每月之星</div>';
+    h+='<table class="simple-table"><tr><th>月份</th><th>姓名</th><th>组别</th><th>分数</th><th>操作</th></tr>';
+    monthlyStars.forEach(function(s,i){
+      h+='<tr><td>'+textInput('ms_month_'+i,s.month)+'</td><td>'+textInput('ms_name_'+i,s.name||'')+'</td><td>'+textInput('ms_group_'+i,s.group||'')+'</td><td>'+numInput('ms_score_'+i,s.score||0)+'</td><td><button class="btn btn-danger btn-sm" style="padding:1px 5px;font-size:10px" onclick="delMStar('+i+')">删除</button></td></tr>';
+    });
+    h+='</table></div>';
+  }
+  h+='<div class="star-cards">';
+  monthlyStars.forEach(function(s){
+    h+='<div class="star-card"><div class="emoji">🌟</div><div class="wk">'+s.month+'</div><div class="nm">'+(s.name||'(待评选)')+'</div><div class="gr">'+(s.group||'')+'</div><div style="font-size:11px;color:#999">'+(s.score?s.score+'分':'')+'</div></div>';
+  });
+  h+='</div>';
+  h+='<div class="card"><div class="card-title">📝 每周之星记录</div>';
+  h+='<table class="simple-table"><tr><th>周次</th><th>之星</th><th>组别</th></tr>';
+  stars.forEach(function(s){h+='<tr><td>'+s.wk+'</td><td>'+(s.name||'待评选')+'</td><td>'+(s.group||'')+'</td></tr>';});
+  h+='</table></div>';
+  return h;
+}
+function saveMonthlyData(){
+  var months=[{label:'7月',key:'7月'},{label:'8月',key:'8月'}];
+  months.forEach(function(m){
+    var newData={};
+    var names=getAllNames();
+    names.forEach(function(n){
+      var ne=document.getElementById('m_name_'+m.key+'_'+n);
+      var ge=document.getElementById('m_group_'+m.key+'_'+n);
+      var se=document.getElementById('m_score_'+m.key+'_'+n);
+      var newName=ne?ne.value.trim()||n:n;
+      newData[newName]=se?parseInt(se.value)||0:0;
+    });
+    monthlyData[m.key]=newData;
+  });
+}
+function saveTotalData(){
+  var newData={};
+  var names=getAllNames();
+  names.forEach(function(n){
+    var ne=document.getElementById('t_name_'+n);
+    var ge=document.getElementById('t_group_'+n);
+    var se=document.getElementById('t_score_'+n);
+    var newName=ne?ne.value.trim()||n:n;
+    newData[newName]=se?parseInt(se.value)||0:0;
+  });
+  totalData=newData;
+}
+function saveOverviewData(){
+  var pe=document.getElementById('ov_totalPersonal');
+  var se=document.getElementById('ov_stage2Total');
+  var ce=document.getElementById('ov_studentCount');
+  var we=document.getElementById('ov_weekCount');
+  if(pe)overviewData.totalPersonal=parseInt(pe.value)||0;
+  if(se)overviewData.stage2Total=parseInt(se.value)||0;
+  if(ce)overviewData.studentCount=parseInt(ce.value)||0;
+  if(we)overviewData.weekCount=parseInt(we.value)||0;
+}
+function saveMonthlyStars(){try{localStorage.setItem('fy_monthly_stars',JSON.stringify(monthlyStars));}catch(e){}}
+function loadMonthlyStars(){try{var d=localStorage.getItem('fy_monthly_stars');if(d){monthlyStars=JSON.parse(d);}}catch(e){}}
+
+// ===== 数据导出（真正 .xlsx —— OOXML + ZIP store 纯前端零依赖，手机/电脑/Excel/WPS 均可打开，带紫色表头样式）=====
+var FY_CRC_TABLE=(function(){var c,t=[];for(var n=0;n<256;n++){c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function fyCrc32(buf){var c=0xFFFFFFFF;for(var i=0;i<buf.length;i++)c=FY_CRC_TABLE[(c^buf[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function fyUtf8(str){return new TextEncoder().encode(str);}
+function fyColLetter(n){var s='';while(n>0){var r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26);}return s;}
+function fyXmlEsc(str){return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
+function fyCell(r,cIdx,cell){
+  var ref=fyColLetter(cIdx+1)+r;
+  if(cell.num){return '<c r="'+ref+'" s="'+(cell.s||0)+'"><v>'+cell.v+'</v></c>';}
+  return '<c r="'+ref+'" s="'+(cell.s||0)+'" t="inlineStr"><is><t xml:space="preserve">'+fyXmlEsc(cell.v)+'</t></is></c>';
+}
+function fyBuildSheet(rows,widths){
+  var w='<cols>';
+  for(var i=0;i<widths.length;i++){w+='<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+widths[i]+'" customWidth="1"/>';}
+  w+='</cols>';
+  var sd='<sheetData>';
+  for(var r=0;r<rows.length;r++){
+    sd+='<row r="'+(r+1)+'">';
+    for(var c=0;c<rows[r].length;c++){sd+=fyCell(r+1,c,rows[r][c]);}
+    sd+='</row>';
+  }
+  sd+='</sheetData>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+w+sd+'</worksheet>';
+}
+function fyZip(files){
+  var chunks=[],central=[],offset=0;
+  files.forEach(function(f){
+    var nb=fyUtf8(f.name);var data=f.data;var crc=fyCrc32(data);var size=data.length;
+    // 本地文件头（固定30字节 + 文件名，文件名从偏移30开始）
+    var lh=new Uint8Array(30+nb.length);var dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true);
+    dv.setUint16(4,20,true);
+    dv.setUint16(6,0,true);
+    dv.setUint16(8,0,true);
+    dv.setUint16(10,0,true);
+    dv.setUint16(12,0,true);
+    dv.setUint32(14,crc,true);
+    dv.setUint32(18,size,true);
+    dv.setUint32(22,size,true);
+    dv.setUint16(26,nb.length,true);
+    dv.setUint16(28,0,true);
+    lh.set(nb,30);chunks.push(lh);chunks.push(data);
+    // 中央目录头（固定46字节 + 文件名，文件名从偏移46开始）
+    var ch=new Uint8Array(46+nb.length);var cd=new DataView(ch.buffer);
+    cd.setUint32(0,0x02014b50,true);
+    cd.setUint16(4,20,true);
+    cd.setUint16(6,20,true);
+    cd.setUint16(8,0,true);
+    cd.setUint16(10,0,true);
+    cd.setUint16(12,0,true);
+    cd.setUint16(14,0,true);
+    cd.setUint32(16,crc,true);
+    cd.setUint32(20,size,true);
+    cd.setUint32(24,size,true);
+    cd.setUint16(28,nb.length,true);
+    cd.setUint16(30,0,true);
+    cd.setUint16(32,0,true);
+    cd.setUint16(34,0,true);
+    cd.setUint16(36,0,true);
+    cd.setUint32(38,0,true);
+    cd.setUint32(42,offset,true);
+    ch.set(nb,46);central.push(ch);offset+=lh.length+data.length;
+  });
+  var cs=0;central.forEach(function(c){cs+=c.length;});
+  var end=new Uint8Array(22);var ed=new DataView(end.buffer);
+  ed.setUint32(0,0x06054b50,true);ed.setUint16(4,0,true);ed.setUint16(6,0,true);ed.setUint16(8,files.length,true);ed.setUint16(10,files.length,true);ed.setUint32(12,cs,true);ed.setUint32(16,offset,true);ed.setUint16(20,0,true);
+  var all=chunks.concat(central);all.push(end);
+  var total=0;all.forEach(function(c){total+=c.length;});
+  var out=new Uint8Array(total);var p=0;all.forEach(function(c){out.set(c,p);p+=c.length;});
+  return out;
+}
+function exportData(){
+  var wks=['W1','W2','W3','W4','W5','W6'];
+  var names=getAllNames();
+  var rowsList=[],widthsList=[],namesList=[];
+  // 1 每周积分
+  var r1=[];
+  r1.push([{v:'姓名',s:1},{v:'组别',s:1}].concat(wks.map(function(w){return{v:w,s:1};})).concat([{v:'合计',s:1}]));
+  names.forEach(function(n){
+    var row=wks.map(function(w){return (PW[w]&&PW[w][n]!==undefined)?PW[w][n]:0;});
+    var sum=row.reduce(function(a,b){return a+b;},0);
+    r1.push([{v:n,s:0},{v:getGroup(n),s:0}].concat(row.map(function(v){return{v:v,num:true,s:0};})).concat([{v:sum,num:true,s:0}]));
+  });
+  rowsList.push(r1);widthsList.push([12,10,8,8,8,8,8,8,10]);namesList.push('每周积分');
+  // 2 每月积分
+  var r2=[];
+  var months=[{l:'7月',k:'7月',w:['W1','W2','W3','W4']},{l:'8月',k:'8月',w:['W5','W6']}];
+  months.forEach(function(m){
+    r2.push([{v:'（'+m.l+'）',s:1}]);
+    r2.push([{v:'姓名',s:1},{v:'组别',s:1},{v:'分数',s:1}]);
+    names.forEach(function(n){
+      var sc=(monthlyData[m.k]&&monthlyData[m.k][n]!==undefined)?monthlyData[m.k][n]:getTotalByWeek(n,m.w);
+      r2.push([{v:n,s:0},{v:getGroup(n),s:0},{v:sc,num:true,s:0}]);
+    });
+  });
+  rowsList.push(r2);widthsList.push([12,10,10]);namesList.push('每月积分');
+  // 3 每周之星
+  var r3=[[{v:'周次',s:1},{v:'姓名',s:1},{v:'组别',s:1}]];
+  stars.forEach(function(s){r3.push([{v:s.wk,s:0},{v:s.name||'',s:0},{v:s.group||'',s:0}]);});
+  rowsList.push(r3);widthsList.push([10,12,10]);namesList.push('每周之星');
+  // 4 每月之星
+  var r4=[[{v:'月份',s:1},{v:'姓名',s:1},{v:'组别',s:1},{v:'分数',s:1}]];
+  monthlyStars.forEach(function(s){r4.push([{v:s.month,s:0},{v:s.name||'',s:0},{v:s.group||'',s:0},{v:s.score||0,num:true,s:0}]);});
+  rowsList.push(r4);widthsList.push([10,12,10,10]);namesList.push('每月之星');
+  // 5 团队阶段冠军
+  var r5=[];var s1=getStage1Rank(),s2=getStage2Rank();
+  r5.push([{v:'第一阶段(W1-W4)排名',s:1}]);
+  r5.push([{v:'名次',s:1},{v:'小组',s:1},{v:'积分',s:1}]);
+  s1.forEach(function(r,i){var t=i===0?'冠军':(i===1?'亚军':'季军');r5.push([{v:t,s:0},{v:r.name,s:0},{v:r.score,num:true,s:0}]);});
+  r5.push([{v:'',s:0}]);
+  r5.push([{v:'第二阶段(W5-W6)排名',s:1}]);
+  r5.push([{v:'名次',s:1},{v:'小组',s:1},{v:'积分',s:1}]);
+  s2.forEach(function(r,i){var t=i===0?'冠军':(i===1?'亚军':'季军');r5.push([{v:t,s:0},{v:r.name,s:0},{v:r.score,num:true,s:0}]);});
+  rowsList.push(r5);widthsList.push([18,12,10]);namesList.push('团队阶段冠军');
+  // 6 现阶段分数
+  var r6=[[{v:'排名',s:1},{v:'姓名',s:1},{v:'组别',s:1},{v:'总分',s:1},{v:'等级',s:1}]];
+  var totalArr=names.map(function(n){var sc=totalData[n]!==undefined?totalData[n]:getTotalByWeek(n,wks);return{name:n,score:sc,group:getGroup(n)};}).sort(function(a,b){return b.score-a.score;});
+  totalArr.forEach(function(r,i){var lv=getLevel(r.score);r6.push([{v:i+1,num:true,s:0},{v:r.name,s:0},{v:r.group,s:0},{v:r.score,num:true,s:0},{v:lv.icon+lv.name,s:0}]);});
+  rowsList.push(r6);widthsList.push([8,12,10,10,14]);namesList.push('现阶段分数');
+  // 样式（紫色表头 + 边框）
+  var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF667EEA"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9D9D9"/></left><right style="thin"><color rgb="FFD9D9D9"/></right><top style="thin"><color rgb="FFD9D9D9"/></top><bottom style="thin"><color rgb="FFD9D9D9"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs></styleSheet>';
+  var sheetXmls=rowsList.map(function(rows,i){return fyBuildSheet(rows,widthsList[i]);});
+  var wbSheets='';
+  for(var i=0;i<namesList.length;i++){wbSheets+='<sheet name="'+fyXmlEsc(namesList[i])+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';}
+  var workbook='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+wbSheets+'</sheets></workbook>';
+  var wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  for(var i=0;i<namesList.length;i++){wbRels+='<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';}
+  wbRels+='<Relationship Id="rId'+(namesList.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  var contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+  for(var i=0;i<namesList.length;i++){contentTypes+='<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';}
+  contentTypes+='</Types>';
+  var rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  var files=[
+    {name:'[Content_Types].xml',data:fyUtf8(contentTypes)},
+    {name:'_rels/.rels',data:fyUtf8(rootRels)},
+    {name:'xl/workbook.xml',data:fyUtf8(workbook)},
+    {name:'xl/_rels/workbook.xml.rels',data:fyUtf8(wbRels)},
+    {name:'xl/styles.xml',data:fyUtf8(styles)}
+  ];
+  for(var i=0;i<sheetXmls.length;i++){files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:fyUtf8(sheetXmls[i])});}
+  var bytes=fyZip(files);
+  var blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='飞鹰班积分数据汇总.xlsx';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  showToast('已导出Excel表格(.xlsx)');
+}
+
+// ===== 学员档案页（参考 BI 下钻 / Notion 人物页）=====
+let profileSel='李龙海';
+function pageProfile(){
+  var names=getAllNames();
+  let h='<div class="page-title">👤 学员档案</div>';
+  h+='<div class="card"><select id="profSel" style="width:100%;padding:8px;font-size:13px">';
+  names.forEach(function(n){h+='<option value="'+n+'"'+(n===profileSel?' selected':'')+'>'+n+' ('+getGroup(n)+')</option>';});
+  h+='</select><div id="profBody"></div></div>';
+  return h;
+}
+function bindProfile(){
+  var sel=document.getElementById('profSel');
+  if(sel){sel.onchange=function(){profileSel=this.value;renderProfile();};}
+  renderProfile();
+}
+function renderProfile(){
+  var el=document.getElementById('profBody');if(!el)return;
+  var n=profileSel;var wks=['W1','W2','W3','W4','W5','W6'];
+  var row=wks.map(w=>(PW[w]&&PW[w][n]!==undefined)?PW[w][n]:0);
+  var total=row.reduce((a,b)=>a+b,0);
+  var lv=getLevel(total);
+  var all=getAllNames().map(x=>({n:x,s:getTotalByWeek(x,wks)})).sort((a,b)=>b.s-a.s);
+  var rank=all.findIndex(x=>x.n===n)+1;
+  var starsGot=stars.filter(s=>s.name===n).map(s=>s.wk);
+  var mStarsGot=monthlyStars.filter(s=>s.name===n).map(s=>s.month);
+  var h='<div class="profile-head"><div class="profile-avatar">'+n.charAt(0)+'</div><div class="profile-info"><div class="pn">'+n+' '+levelBadge(total)+'</div><div class="pg">'+getGroup(n)+' · 总积分 '+total+' · 排名第'+rank+'</div></div></div>';
+  h+='<div class="profile-lv"><div style="font-size:11px;color:#666">'+lv.icon+' '+lv.name+(lv.nextName?' → '+lv.nextIcon+' '+lv.nextName+'（还差 '+lv.need+' 分升级）':' · 已满级 🎉')+'</div><div class="lv-bar"><div class="lv-bar-fill" style="width:'+lv.prog+'%;background:'+lv.color+'"></div></div></div>';
+  h+='<canvas id="profChart" style="width:100%;height:200px;margin-top:6px"></canvas>';
+  h+='<div class="card-title" style="margin-top:10px">🌟 获得荣誉</div>';
+  h+='<div style="font-size:12px;color:#555;line-height:1.9">每周之星：'+(starsGot.length?starsGot.join('、'):'暂无')+'<br>每月之星：'+(mStarsGot.length?mStarsGot.join('、'):'暂无')+'</div>';
+  h+='<div class="card-title" style="margin-top:10px">📋 每周积分</div><table class="simple-table"><tr><th>周次</th>'+wks.map(w=>'<th>'+w+'</th>').join('')+'<th>合计</th></tr>';
+  h+='<tr><td style="font-weight:600">积分</td>'+row.map(v=>'<td>'+v+'</td>').join('')+'<td><b>'+total+'</b></td></tr></table>';
+  el.innerHTML=h;
+  setTimeout(drawProfChart,50);
+}
+function drawProfChart(){
+  var canvas=document.getElementById('profChart');if(!canvas)return;
+  var wks=['W1','W2','W3','W4','W5','W6'];
+  var data=wks.map(w=>(PW[w]&&PW[w][profileSel]!==undefined)?PW[w][profileSel]:0);
+  var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var W=rect.width-20;var H=200;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  var ml=34,mr=14,mt=14,mb=30;var cW=W-ml-mr,cH=H-mt-mb;
+  var maxV=Math.max.apply(null,data.concat([1]))*1.2;
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var y=mt+cH*(1-i/4);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*i/4),ml-5,y+4);}
+  ctx.fillStyle='#999';ctx.textAlign='center';ctx.font='11px sans-serif';
+  wks.forEach(function(w,i){ctx.fillText(w,ml+cW*(i+0.5)/wks.length,H-8);});
+  var pts=data.map(function(v,i){return{x:ml+cW*(i+0.5)/wks.length,y:mt+cH*(1-v/maxV)};});
+  var color='#667eea';
+  ctx.beginPath();ctx.moveTo(pts[0].x,mt+cH);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.lineTo(pts[pts.length-1].x,mt+cH);ctx.closePath();ctx.fillStyle='rgba(102,126,234,.1)';ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+  pts.forEach(function(p,i){ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=color;ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(data[i],p.x,p.y-10);});
+}
+
+// ===== 全局搜索（参考 Notion 快速搜索）=====
+function pageSearch(){
+  let h='<div class="page-title">🔍 全局搜索</div>';
+  h+='<div class="card"><div class="search-box"><span class="ico">🔍</span><input id="searchInput" type="text" placeholder="输入学员姓名关键字..." style="width:100%;padding:9px 12px 9px 30px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="doSearch()" /></div>';
+  h+='<div id="searchResult" style="margin-top:8px"></div></div>';
+  return h;
+}
+function doSearch(){
+  var el=document.getElementById('searchInput');if(!el)return;
+  var kw=el.value.trim();
+  var box=document.getElementById('searchResult');if(!box)return;
+  var wks=['W1','W2','W3','W4','W5','W6'];
+  if(!kw){box.innerHTML='<p style="font-size:12px;color:#999;text-align:center;padding:12px">输入关键字开始搜索</p>';return;}
+  var names=getAllNames().filter(function(n){return n.indexOf(kw)>=0;});
+  if(!names.length){box.innerHTML='<p style="font-size:12px;color:#999;text-align:center;padding:12px">未找到匹配的学员</p>';return;}
+  var html='';
+  names.forEach(function(n){
+    var total=getTotalByWeek(n,wks);
+    var lv=getLevel(total);
+    html+='<div class="rank-row" style="cursor:pointer" onclick="profileSel=\''+n+'\';currentPage=\'profile\';renderNav();renderPage();"><div class="rank-name">'+n+' '+levelBadge(total)+'</div><div class="rank-group">'+getGroup(n)+'</div><div class="rank-score">'+total+'</div></div>';
+  });
+  box.innerHTML=html;
+}
+
+// ===== 数据导出页 =====
+function pageExport(){
+  let h='<div class="page-title">📤 数据导出</div>';
+  h+='<div class="card"><div class="export-icon">📊</div>';
+  h+='<p style="font-size:12px;color:#666;line-height:1.8;text-align:center">点击下方按钮，导出包含所有核心数据的 Excel 表格：</p>';
+  h+='<div class="rule-items" style="justify-content:center">';
+  h+='<span>每周积分</span><span>每月积分</span><span>每周之星</span><span>每月之星</span><span>团队阶段冠军</span><span>现阶段分数</span>';
+  h+='</div></div>';
+  h+='<button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;margin-top:4px" onclick="exportData()">📥 导出 Excel 表格</button>';
+  h+='<div class="card" style="margin-top:10px"><div class="card-title">ℹ️ 导出说明</div><p style="font-size:11px;color:#999;line-height:1.7">导出文件为 .xls 格式（Excel / WPS 可直接打开）。数据以当前工作台显示为准，包含管理员已修改的内容。</p></div>';
+  return h;
+}
+
+// === 阶段冠军 ===
+function pageChamp(){
+  const s1=getStage1Rank();
+  let h=`<div class="page-title">⭐ 阶段冠军</div>`;
+  h+=`<div class="banner"><div class="medal">👑</div><div class="info"><div class="t">第一阶段冠军</div><div class="v">${s1[0].name} ${s1[0].score}分</div></div></div>`;
+  h+=`<div class="card"><div class="card-title">🏆 第一阶段最终排名</div>`;
+  s1.forEach((r,i)=>{
+    const lbl=i===0?'冠军 🥇':i===1?'亚军 🥈':'季军 🥉';
+    h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${lbl}</div><div class="rank-name">${r.name}</div><div class="rank-score">${r.score}分${levelBadge(r.score)}</div></div>`;
+  });
+  h+=`</div>`;
+  const s2=getStage2Rank();
+  h+=`<div class="card"><div class="card-title">🔥 第二阶段进行中</div>`;
+  s2.forEach((r,i)=>{
+    h+=`<div class="rank-row"><div class="rank-num ${rankClass(i)}">${medalIcon(i)}</div><div class="rank-name">${r.name}</div><div class="rank-score">${r.score}分${levelBadge(r.score)}</div></div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+// === 对比分析 ===
+function pageCompare(){
+  const names=getAllNames();
+  let h=`<div class="page-title">🔍 对比分析</div>`;
+  h+=`<div class="card">`;
+  h+=`<select id="cmpA"><option value="">选择学员A</option>`;
+  names.forEach(n=>{h+=`<option value="${n}">${n} (${getGroup(n)})</option>`;});
+  h+=`</select>`;
+  h+=`<select id="cmpB"><option value="">选择学员B</option>`;
+  names.forEach(n=>{h+=`<option value="${n}">${n} (${getGroup(n)})</option>`;});
+  h+=`</select>`;
+  h+=`<div id="cmpResult"></div>`;
+  h+=`</div>`;
+  return h;
+}
+function initCompare(){
+  const a=document.getElementById('cmpA');
+  const b=document.getElementById('cmpB');
+  a.value='李龙海';b.value='何玉洁';
+  const doCmp=()=>{
+    const na=a.value,nb=b.value;
+    if(!na||!nb){document.getElementById('cmpResult').innerHTML='<div style="color:#999;font-size:12px;text-align:center;padding:10px">请选择两位学员</div>';return;}
+    const wks=['W1','W2','W3','W4','W5','W6'];
+    let h=`<table class="cmp-table"><tr><th>周次</th><th>${na}${levelBadge(getTotalByWeek(na,wks))}</th><th>${nb}${levelBadge(getTotalByWeek(nb,wks))}</th></tr>`;
+    let ta=0,tb=0;
+    wks.forEach(w=>{
+      const va=(PW[w]&&PW[w][na])||0;
+      const vb=(PW[w]&&PW[w][nb])||0;
+      ta+=va;tb+=vb;
+      h+=`<tr><td>${w}</td><td class="${va>vb?'win':''}">${va}</td><td class="${vb>va?'win':''}">${vb}</td></tr>`;
+    });
+    h+=`<tr style="font-weight:700"><td>合计</td><td class="${ta>tb?'win':''}">${ta}</td><td class="${tb>ta?'win':''}">${tb}</td></tr>`;
+    h+=`</table>`;
+    document.getElementById('cmpResult').innerHTML=h;
+  };
+  a.onchange=doCmp;b.onchange=doCmp;
+  doCmp();
+}
+
+// === 趋势图表 ===
+let trendTab='group';
+let trendPerson='李龙海';
+let trendView='weekly';
+function pageTrend(){
+  let h='<div class="page-title">📈 趋势图表</div>';
+  h+='<div class="card"><div class="chart-tabs" id="trendTabs">';
+  [['group','各小组趋势'],['individual','个人趋势'],['member','各组成员趋势'],['suggestion','💡 建议视图']].forEach(function(t){
+    h+='<div class="chart-tab'+(trendTab===t[0]?' active':'')+'" data-tab="'+t[0]+'">'+t[1]+'</div>';
+  });
+  h+='</div><div id="trendContent"></div></div>';
+  return h;
+}
+function initTrend(){
+  document.querySelectorAll('#trendTabs .chart-tab').forEach(function(btn){
+    btn.onclick=function(){
+      trendTab=this.dataset.tab;
+      document.querySelectorAll('#trendTabs .chart-tab').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+      renderTrendContent();
+    };
+  });
+  renderTrendContent();
+}
+function renderTrendContent(){
+  var el=document.getElementById('trendContent');
+  if(!el)return;
+  if(trendTab==='group'){el.innerHTML=renderGroupTrend();setTimeout(drawGroupLineChart,50);}
+  else if(trendTab==='individual'){el.innerHTML=renderIndividualTrend();setTimeout(drawIndividualChart,50);}
+  else if(trendTab==='member'){el.innerHTML=renderMemberTrend();setTimeout(drawMemberCharts,50);}
+  else if(trendTab==='suggestion'){el.innerHTML=renderSuggestionTrend();setTimeout(drawSuggestionCharts,50);}
+  bindTrendEvents();
+}
+
+// 1. 各小组趋势
+function renderGroupTrend(){
+  var wks=['W1','W2','W3','W4','W5','W6'];
+  var groups=Object.keys(GROUPS);
+  var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var h='<div class="trend-section-title">📊 各小组每周积分走势<span class="trend-subtitle">— 折线图对比</span></div>';
+  h+='<div class="detail-table-wrap"><table class="detail-table">';
+  h+='<tr><th class="name-col">周次</th>';
+  groups.forEach(function(g){h+='<th style="color:'+gColors[g]+'">'+g+'</th>';});
+  h+='</tr>';
+  wks.forEach(function(w){h+='<tr><td class="name-col" style="font-weight:700">'+w+'</td>';groups.forEach(function(g){h+='<td>'+TD[w][g][6]+'</td>';});h+='</tr>';});
+  var totals=groups.map(function(g){return wks.reduce(function(s,w){return s+TD[w][g][6];},0);});
+  h+='<tr class="sum-row"><td class="name-col">合计</td>';totals.forEach(function(v){h+='<td>'+v+'</td>';});h+='</tr></table></div>';
+  h+='<canvas id="groupLineChart" style="width:100%;height:240px;margin-top:10px"></canvas>';
+  h+='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">';
+  groups.forEach(function(g){h+='<span style="font-size:11px;display:flex;align-items:center;gap:3px"><span style="width:14px;height:3px;background:'+gColors[g]+';display:inline-block;border-radius:2px"></span>'+g+'</span>';});
+  h+='</div>';
+  return h;
+}
+function drawGroupLineChart(){
+  var canvas=document.getElementById('groupLineChart');if(!canvas)return;
+  var wks=['W1','W2','W3','W4','W5','W6'];var groups=Object.keys(GROUPS);
+  var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var W=rect.width-20;var H=240;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  var ml=44,mr=16,mt=16,mb=36;var cW=W-ml-mr,cH=H-mt-mb;
+  var allVals=[];wks.forEach(function(w){groups.forEach(function(g){allVals.push(TD[w][g][6]);});});
+  var maxV=Math.max.apply(null,allVals.concat([1]))*1.15;
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var y=mt+cH*(1-i/4);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*i/4),ml-6,y+4);}
+  ctx.fillStyle='#999';ctx.textAlign='center';ctx.font='11px sans-serif';
+  wks.forEach(function(w,i){ctx.fillText(w,ml+cW*(i+0.5)/wks.length,H-10);});
+  groups.forEach(function(g,gi){
+    var pts=wks.map(function(w,i){return{x:ml+cW*(i+0.5)/wks.length,y:mt+cH*(1-TD[w][g][6]/maxV)};});
+    ctx.strokeStyle=gColors[g];ctx.lineWidth=2.5;ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+    pts.forEach(function(p,i){ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=gColors[g];ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=gColors[g];ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(TD[wks[i]][g][6],p.x,p.y-10);});
+  });
+}
+
+// 2. 个人趋势
+function renderIndividualTrend(){
+  var names=getAllNames();var wks=['W1','W2','W3','W4','W5','W6'];
+  var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var h='<div class="trend-section-title">👤 个人积分趋势<span class="trend-subtitle">— 按时间轴查看每人每周得分</span></div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">';
+  h+='<select id="trendPersonSel" style="padding:5px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px">';
+  names.forEach(function(n){h+='<option value="'+n+'"'+(n===trendPerson?' selected':'')+'>'+n+' ('+getGroup(n)+')</option>';});
+  h+='</select>';
+  h+='<div style="display:flex;gap:4px">';
+  [['weekly','按周'],['daily','按天']].forEach(function(v){h+='<div class="chart-tab'+(trendView===v[0]?' active':'')+'" data-view="'+v[0]+'">'+v[1]+'</div>';});
+  h+='</div></div>';
+  var personData=wks.map(function(w){return(PW[w]&&PW[w][trendPerson])||0;});
+  var total=personData.reduce(function(s,v){return s+v;},0);
+  h+='<div class="detail-table-wrap"><table class="detail-table">';
+  h+='<tr><th class="name-col">姓名</th>';wks.forEach(function(w){h+='<th>'+w+'</th>';});h+='<th class="total-col">合计</th></tr>';
+  h+='<tr><td class="name-col" style="color:'+(gColors[getGroup(trendPerson)]||'#333')+';font-weight:700">'+trendPerson+'</td>';
+  personData.forEach(function(v){h+='<td>'+v+'</td>';});h+='<td class="total-col">'+total+'</td></tr></table></div>';
+  if(trendView==='weekly')h+='<canvas id="indLineChart" style="width:100%;height:220px;margin-top:10px"></canvas>';
+  else h+='<canvas id="indDailyChart" style="width:100%;height:220px;margin-top:10px"></canvas>';
+  return h;
+}
+function drawIndividualChart(){if(trendView==='weekly')drawIndWeeklyChart();else drawIndDailyChart();}
+function drawIndWeeklyChart(){
+  var canvas=document.getElementById('indLineChart');if(!canvas)return;
+  var wks=['W1','W2','W3','W4','W5','W6'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  var ml=40,mr=16,mt=16,mb=36;var cW=W-ml-mr,cH=H-mt-mb;
+  var data=wks.map(function(w){return(PW[w]&&PW[w][trendPerson])||0;});
+  var maxV=Math.max.apply(null,data.concat([1]))*1.2;
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var y=mt+cH*(1-i/4);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*i/4),ml-6,y+4);}
+  ctx.fillStyle='#999';ctx.textAlign='center';ctx.font='11px sans-serif';
+  wks.forEach(function(w,i){ctx.fillText(w,ml+cW*(i+0.5)/wks.length,H-10);});
+  var pts=data.map(function(v,i){return{x:ml+cW*(i+0.5)/wks.length,y:mt+cH*(1-v/maxV)};});
+  var color=gColors[getGroup(trendPerson)]||'#667eea';
+  ctx.beginPath();ctx.moveTo(pts[0].x,mt+cH);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.lineTo(pts[pts.length-1].x,mt+cH);ctx.closePath();ctx.fillStyle=color+'18';ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+  pts.forEach(function(p,i){ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle=color;ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText(data[i],p.x,p.y-12);});
+  ctx.fillStyle=color;ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.fillText(trendPerson+'（'+getGroup(trendPerson)+'）',ml,12);
+}
+function drawIndDailyChart(){
+  var canvas=document.getElementById('indDailyChart');if(!canvas)return;
+  var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  var days=[];['W1','W2','W3','W4','W5','W6'].forEach(function(w){if(DD[w])for(var d in DD[w])days.push({date:d,week:w});});
+  days.sort(function(a,b){return a.date.localeCompare(b.date);});
+  if(!days.length){ctx.fillStyle='#999';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('暂无每日数据',W/2,H/2);return;}
+  var ml=36,mr=10,mt=20,mb=50;var cW=W-ml-mr,cH=H-mt-mb;
+  var dailyScores=days.map(function(dd){var s=0;var dayData=DD[dd.week]&&DD[dd.week][dd.date];if(dayData)for(var g in dayData)if(dayData[g][trendPerson])s+=dayData[g][trendPerson];return s;});
+  var maxV=Math.max.apply(null,dailyScores.concat([1]))*1.3;
+  var barW=Math.max(4,cW/days.length*0.7);var gap=cW/days.length;
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var y=mt+cH*(1-i/4);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*i/4),ml-4,y+3);}
+  var color=gColors[getGroup(trendPerson)]||'#667eea';
+  dailyScores.forEach(function(v,i){if(v<=0)return;var x=ml+gap*i+(gap-barW)/2;var h=v/maxV*cH;ctx.fillStyle=color+'99';ctx.fillRect(x,mt+cH-h,barW,h);ctx.fillStyle=color;ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.fillText(v,x+barW/2,mt+cH-h-4);});
+  ctx.fillStyle='#999';ctx.font='8px sans-serif';ctx.textAlign='center';
+  days.forEach(function(d,i){if(i%2===0||days.length<=12){var x=ml+gap*i+gap/2;ctx.save();ctx.translate(x,H-8);ctx.fillText(d.date.slice(-2)+'日',0,0);ctx.restore();}});
+  ctx.fillStyle=color;ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.fillText(trendPerson+' 每日得分',ml,14);
+}
+
+// 3. 各组成员趋势
+function renderMemberTrend(){
+  var groups=Object.keys(GROUPS);var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var h='<div class="trend-section-title">👥 各组成员积分趋势<span class="trend-subtitle">— 每组内成员对比</span></div>';
+  groups.forEach(function(g,gi){
+    h+='<div class="group-chart-card" style="margin-bottom:10px">';
+    h+='<div class="group-chart-title"><span style="width:10px;height:10px;border-radius:2px;background:'+gColors[g]+';display:inline-block"></span> '+g+'（'+GROUPS[g].length+'人）</div>';
+    h+='<canvas id="memberChart_'+gi+'" style="width:100%;height:200px"></canvas>';
+    h+='</div>';
+  });
+  return h;
+}
+function drawMemberCharts(){
+  var wks=['W1','W2','W3','W4','W5','W6'];var groups=Object.keys(GROUPS);
+  var lineColors=['#667eea','#9b8fd4','#4a90d9','#7bb8f0','#357abd','#1a5276'];
+  groups.forEach(function(g,gi){
+    var canvas=document.getElementById('memberChart_'+gi);if(!canvas)return;
+    var members=GROUPS[g];var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+    var W=rect.width-20;var H=200;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+    var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+    var ml=36,mr=10,mt=12,mb=28;var cW=W-ml-mr,cH=H-mt-mb;
+    var maxV=0;members.forEach(function(n){wks.forEach(function(w){var v=(PW[w]&&PW[w][n])||0;if(v>maxV)maxV=v;});});maxV=Math.max(maxV,1)*1.15;
+    ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+    for(var i=0;i<=3;i++){var y=mt+cH*(1-i/3);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*i/3),ml-4,y+3);}
+    ctx.fillStyle='#999';ctx.font='10px sans-serif';ctx.textAlign='center';
+    wks.forEach(function(w,i){ctx.fillText(w,ml+cW*(i+0.5)/wks.length,H-6);});
+    members.forEach(function(n,ni){
+      var data=wks.map(function(w){return(PW[w]&&PW[w][n])||0;});
+      var pts=data.map(function(v,i){return{x:ml+cW*(i+0.5)/wks.length,y:mt+cH*(1-v/maxV)};});
+      var c=lineColors[ni%lineColors.length];ctx.strokeStyle=c;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.globalAlpha=0.75;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();ctx.globalAlpha=1;
+      pts.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.stroke();});
+    });
+    var perRow=Math.ceil(members.length/2);
+    members.forEach(function(n,ni){var row=Math.floor(ni/perRow);var col=ni%perRow;var lx=ml+col*(cW/perRow)+4;var ly=H-16+row*11;var c=lineColors[ni%lineColors.length];ctx.fillStyle=c;ctx.fillRect(lx,ly-6,10,3);ctx.fillStyle='#666';ctx.font='9px sans-serif';ctx.textAlign='left';ctx.fillText(n.length>4?n.slice(0,4):n,lx+13,ly-3);});
+  });
+}
+
+// 4. 建议视图
+function renderSuggestionTrend(){
+  var wks=['W1','W2','W3','W4','W5','W6'];
+  var h='<div class="trend-section-title">💡 建议增加的视图</div>';
+  h+='<div class="card" style="font-size:12px;color:#666;line-height:1.8">';
+  h+='<p><strong>1. 累计积分增长曲线</strong> — 展示每人从W1到当前周的累计积分增长轨迹，看谁进步最快</p>';
+  h+='<p><strong>2. 🔥 周增量对比</strong> — 每人每周的积分增量柱状图，发现谁在加速、谁在减速</p>';
+  h+='<p><strong>3. Top5 趋势</strong> — 只看前5名的积分走势，聚焦头部竞争</p>';
+  h+='<p><strong>4. ABCD分类趋势</strong> — 看每人的A/B/C/D类积分占比变化，分析得分结构</p>';
+  h+='<p><strong>5. 📋 出勤率趋势</strong> — 每日出勤/缺勤热力图，发现出勤模式</p>';
+  h+='</div>';
+  h+='<div class="trend-section-title" style="margin-top:10px">📈 累计积分增长曲线<span class="trend-subtitle">— 建议视图1</span></div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
+  h+='<select id="sugPersonSel" style="padding:5px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px">';
+  getAllNames().forEach(function(n){h+='<option value="'+n+'">'+n+' ('+getGroup(n)+')</option>';});
+  h+='</select></div>';
+  h+='<canvas id="cumulativeChart" style="width:100%;height:220px"></canvas>';
+  h+='<div class="trend-section-title" style="margin-top:14px">🏆 Top5 总积分趋势<span class="trend-subtitle">— 建议视图3</span></div>';
+  h+='<canvas id="top5Chart" style="width:100%;height:220px"></canvas>';
+  return h;
+}
+function drawSuggestionCharts(){drawCumulativeChart();drawTop5Chart();var sel=document.getElementById('sugPersonSel');if(sel)sel.onchange=drawCumulativeChart;}
+function drawCumulativeChart(){
+  var canvas=document.getElementById('cumulativeChart');if(!canvas)return;
+  var sel=document.getElementById('sugPersonSel');var person=sel?sel.value:'李龙海';
+  var wks=['W1','W2','W3','W4','W5','W6'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  var ml=44,mr=16,mt=16,mb=36;var cW=W-ml-mr,cH=H-mt-mb;
+  var data=wks.map(function(w,i){var s=0;for(var j=0;j<=i;j++)s+=(PW[wks[j]]&&PW[wks[j]][person])||0;return s;});
+  var maxV=Math.max.apply(null,data.concat([1]))*1.15;
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var y=mt+cH*(1-i/4);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*i/4),ml-6,y+4);}
+  ctx.fillStyle='#999';ctx.textAlign='center';ctx.font='11px sans-serif';
+  wks.forEach(function(w,i){ctx.fillText(w,ml+cW*(i+0.5)/wks.length,H-10);});
+  var color=gColors[getGroup(person)]||'#667eea';
+  var pts=data.map(function(v,i){return{x:ml+cW*(i+0.5)/wks.length,y:mt+cH*(1-v/maxV)};});
+  ctx.beginPath();ctx.moveTo(pts[0].x,mt+cH);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.lineTo(pts[pts.length-1].x,mt+cH);ctx.closePath();ctx.fillStyle=color+'15';ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+  pts.forEach(function(p,i){ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle=color;ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText(data[i],p.x,p.y-12);});
+  ctx.fillStyle=color;ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.fillText(person+' 累计积分增长',ml,12);
+}
+function drawTop5Chart(){
+  var canvas=document.getElementById('top5Chart');if(!canvas)return;
+  var wks=['W1','W2','W3','W4','W5','W6'];var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  var ml=44,mr=16,mt=16,mb=36;var cW=W-ml-mr,cH=H-mt-mb;
+  var names=getAllNames();var rank=names.map(function(n){var s=0;wks.forEach(function(w){s+=(PW[w]&&PW[w][n])||0;});return{name:n,total:s};});
+  rank.sort(function(a,b){return b.total-a.total;});
+  var top5=rank.slice(0,5).map(function(r){return r.name;});
+  var allMax=0;var top5Data=top5.map(function(n){return wks.map(function(w,i){var s=0;for(var j=0;j<=i;j++)s+=(PW[wks[j]]&&PW[wks[j]][n])||0;return s;});});
+  top5Data.forEach(function(arr){arr.forEach(function(v){if(v>allMax)allMax=v;});});allMax=Math.max(allMax,1)*1.15;
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var y=mt+cH*(1-i/4);ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+cW,y);ctx.stroke();ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(allMax*i/4),ml-6,y+4);}
+  ctx.fillStyle='#999';ctx.textAlign='center';ctx.font='11px sans-serif';
+  wks.forEach(function(w,i){ctx.fillText(w,ml+cW*(i+0.5)/wks.length,H-10);});
+  var lineColors=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db'];
+  top5.forEach(function(n,ni){
+    var data=top5Data[ni];var pts=data.map(function(v,i){return{x:ml+cW*(i+0.5)/wks.length,y:mt+cH*(1-v/allMax)};});
+    ctx.strokeStyle=lineColors[ni];ctx.lineWidth=2;ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+    pts.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=lineColors[ni];ctx.lineWidth=1.5;ctx.stroke();});
+  });
+  ctx.font='10px sans-serif';ctx.textAlign='left';
+  top5.forEach(function(n,i){var col=i%3;var row=Math.floor(i/3);var lx=ml+col*(cW/3)+4;var ly=H-8+row*12;ctx.fillStyle=lineColors[i];ctx.fillRect(lx,ly-7,10,3);ctx.fillStyle='#666';ctx.fillText(n,lx+13,ly-4);});
+}
+
+function bindTrendEvents(){
+  var ps=document.getElementById('trendPersonSel');
+  if(ps)ps.onchange=function(){trendPerson=this.value;renderTrendContent();};
+  document.querySelectorAll('[data-view]').forEach(function(btn){
+    btn.onclick=function(){trendView=this.dataset.view;document.querySelectorAll('[data-view]').forEach(function(b){b.classList.remove('active');});this.classList.add('active');renderTrendContent();};
+  });
+}
+
+// ===== 知识库 =====
+function pageKnowledge(){
+  let h=`<div class="page-title">📚 知识库 ${isAdmin?'<button class="btn btn-primary btn-sm" style="float:right" onclick="openKbModal()">+ 新建</button>':''}</div>`;
+  h+=`<div class="card"><div class="card-body" id="kb-list"></div></div>`;
+  setTimeout(loadKbList,10);
+  return h;
+}
+async function loadKbList(){
+  var el=document.getElementById('kb-list');
+  if(!el)return;
+  var list=cloudData.knowledge||[];
+  if(!list.length){el.innerHTML='<p style="color:#999;text-align:center;padding:20px;">暂无知识记录</p>';return;}
+  list.sort(function(a,b){return(b.updated_at||'').localeCompare(a.updated_at||'');});
+  el.innerHTML=list.map(function(k){
+    return '<div class="kb-item"><h4><span class="kb-cat">'+(k.category||'通用')+'</span>'+k.title+'</h4><div class="kb-meta">'+(k.author||'')+' · '+(k.updated_at||k.created_at||'')+'</div><div style="font-size:12px;color:#555;margin-top:4px;line-height:1.6">'+(k.content||'').slice(0,120)+(k.content&&k.content.length>120?'...':'')+'</div>'+(isAdmin?'<div style="margin-top:4px"><button class="btn btn-ghost btn-sm" onclick="editKb('+k.id+')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteKb('+k.id+')">删除</button></div>':'')+'</div>';
+  }).join('');
+}
+function openKbModal(){
+  if(!requireAdmin())return;
+  document.getElementById('kb-id').value='';document.getElementById('kb-title').value='';document.getElementById('kb-content').value='';document.getElementById('kb-author').value='';
+  document.getElementById('kb-modal-title').textContent='新建知识';
+  openModal('modal-kb');
+}
+function editKb(id){
+  if(!requireAdmin())return;
+  var k=cloudData.knowledge.find(function(x){return x.id===id;});if(!k)return;
+  document.getElementById('kb-id').value=k.id;document.getElementById('kb-title').value=k.title||'';
+  document.getElementById('kb-content').value=k.content||'';document.getElementById('kb-author').value=k.author||'';
+  document.getElementById('kb-category').value=k.category||'通用';
+  document.getElementById('kb-modal-title').textContent='编辑知识';
+  openModal('modal-kb');
+}
+async function submitKb(){
+  var id=document.getElementById('kb-id').value;
+  var data={title:document.getElementById('kb-title').value,category:document.getElementById('kb-category').value,content:document.getElementById('kb-content').value,author:document.getElementById('kb-author').value,updated_at:nowStr()};
+  if(!data.title){showToast('请填写标题');return;}
+  if(supa){
+    if(id){data.id=parseInt(id);await supa.from('knowledge_base').update(data).eq('id',parseInt(id));}
+    else{data.created_at=nowStr();data.id=(cloudData.knowledge.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1);await supa.from('knowledge_base').insert([data]);}
+    await loadCloudData();
+  }else{
+    if(id){var k=cloudData.knowledge.find(function(x){return x.id===parseInt(id);});if(k)Object.assign(k,data);}
+    else{data.id=(cloudData.knowledge.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1);data.created_at=nowStr();cloudData.knowledge.push(data);}
+  }
+  showToast('知识已保存');
+  closeModal('modal-kb');renderPage();
+}
+async function deleteKb(id){
+  if(!requireAdmin())return;
+  if(!confirm('确认删除这条知识？'))return;
+  if(supa)await supa.from('knowledge_base').delete().eq('id',id);
+  cloudData.knowledge=cloudData.knowledge.filter(function(x){return x.id!==id;});
+  showToast('已删除');renderPage();
+}
+
+// ===== 通知文件 =====
+function pageNotices(){
+  let h=`<div class="page-title">📢 通知文件 ${isAdmin?'<button class="btn btn-primary btn-sm" style="float:right" onclick="openNoticeModal()">+ 发布</button>':''}</div>`;
+  h+=`<div class="card"><div class="card-body" id="notice-list-page"></div></div>`;
+  setTimeout(loadNoticeList,10);
+  return h;
+}
+async function loadNoticeList(){
+  var el=document.getElementById('notice-list-page');if(!el)return;
+  var list=(cloudData.notices||[]).slice().sort(function(a,b){return(b.pinned-a.pinned)||((b.created_at||'').localeCompare(a.created_at||''));});
+  if(!list.length){el.innerHTML='<p style="color:#999;text-align:center;padding:20px;">暂无通知</p>';return;}
+  el.innerHTML=list.map(function(n){
+    return '<div class="notice-item'+(n.pinned?' pinned':'')+'"><h4>'+(n.pinned?'<span class="pin-badge">置顶</span>':'')+(n.title||'')+'</h4><div class="meta">'+(n.type||'通知')+' · '+(n.publisher||'')+' · '+(n.created_at||'')+'</div><div class="content">'+(n.content||'')+'</div>'+(isAdmin?'<div style="margin-top:4px"><button class="btn btn-ghost btn-sm" onclick="editNotice('+n.id+')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteNotice('+n.id+')">删除</button></div>':'')+'</div>';
+  }).join('');
+}
+function openNoticeModal(){
+  if(!requireAdmin())return;
+  document.getElementById('notice-id').value='';document.getElementById('notice-title').value='';document.getElementById('notice-content').value='';
+  document.getElementById('notice-type').value='通知';document.getElementById('notice-publisher').value='班长';document.getElementById('notice-pinned').value='0';
+  document.getElementById('notice-modal-title').textContent='发布通知';
+  openModal('modal-notice');
+}
+function editNotice(id){
+  if(!requireAdmin())return;
+  var n=cloudData.notices.find(function(x){return x.id===id;});if(!n)return;
+  document.getElementById('notice-id').value=n.id;document.getElementById('notice-title').value=n.title||'';
+  document.getElementById('notice-content').value=n.content||'';document.getElementById('notice-type').value=n.type||'通知';
+  document.getElementById('notice-publisher').value=n.publisher||'班长';document.getElementById('notice-pinned').value=n.pinned?'1':'0';
+  document.getElementById('notice-modal-title').textContent='编辑通知';
+  openModal('modal-notice');
+}
+async function submitNotice(){
+  var id=document.getElementById('notice-id').value;
+  var data={title:document.getElementById('notice-title').value,type:document.getElementById('notice-type').value,content:document.getElementById('notice-content').value,publisher:document.getElementById('notice-publisher').value,pinned:parseInt(document.getElementById('notice-pinned').value)||0};
+  if(!data.title){showToast('请填写标题');return;}
+  if(supa){
+    if(id){data.id=parseInt(id);await supa.from('notices').update(data).eq('id',parseInt(id));}
+    else{data.id=(cloudData.notices.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1);data.created_at=nowStr();await supa.from('notices').insert([data]);}
+    await loadCloudData();
+  }else{
+    if(id){var n=cloudData.notices.find(function(x){return x.id===parseInt(id);});if(n)Object.assign(n,data);}
+    else{data.id=(cloudData.notices.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1);data.created_at=nowStr();cloudData.notices.push(data);}
+  }
+  showToast('通知已发布');closeModal('modal-notice');renderPage();
+}
+async function deleteNotice(id){
+  if(!requireAdmin())return;
+  if(!confirm('确认删除这条通知？'))return;
+  if(supa)await supa.from('notices').delete().eq('id',id);
+  cloudData.notices=cloudData.notices.filter(function(x){return x.id!==id;});
+  showToast('已删除');renderPage();
+}
+
+// ===== 记录 =====
+function pageRecords(){
+  let h=`<div class="page-title">📝 记录 ${isAdmin?'<button class="btn btn-primary btn-sm" style="float:right" onclick="openRecordModal()">+ 新增</button>':''}</div>`;
+  h+=`<div class="card"><div class="card-body" id="record-list-page"></div></div>`;
+  setTimeout(loadRecordList,10);
+  return h;
+}
+async function loadRecordList(){
+  var el=document.getElementById('record-list-page');if(!el)return;
+  var list=(cloudData.records||[]).slice().sort(function(a,b){return((b.date||'').localeCompare(a.date||''))||(b.id-a.id);});
+  if(!list.length){el.innerHTML='<p style="color:#999;text-align:center;padding:20px;">暂无记录</p>';return;}
+  el.innerHTML=list.map(function(r){
+    return '<div class="notice-item"><h4>['+(r.category||'其他')+'] '+(r.title||'')+'</h4><div class="meta">'+(r.date||'')+' · '+(r.author||'')+'</div><div class="content">'+(r.content||'')+'</div>'+(isAdmin?'<div style="margin-top:4px"><button class="btn btn-ghost btn-sm" onclick="editRecord('+r.id+')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteRecord('+r.id+')">删除</button></div>':'')+'</div>';
+  }).join('');
+}
+function openRecordModal(){
+  if(!requireAdmin())return;
+  document.getElementById('record-id').value='';document.getElementById('record-title').value='';document.getElementById('record-content').value='';
+  document.getElementById('record-date').value=new Date().toISOString().slice(0,10);document.getElementById('record-category').value='活动';
+  document.getElementById('record-author').value='';
+  document.getElementById('record-modal-title').textContent='新增记录';
+  openModal('modal-record');
+}
+function editRecord(id){
+  if(!requireAdmin())return;
+  var r=cloudData.records.find(function(x){return x.id===id;});if(!r)return;
+  document.getElementById('record-id').value=r.id;document.getElementById('record-title').value=r.title||'';
+  document.getElementById('record-content').value=r.content||'';document.getElementById('record-date').value=r.date||'';
+  document.getElementById('record-category').value=r.category||'其他';document.getElementById('record-author').value=r.author||'';
+  document.getElementById('record-modal-title').textContent='编辑记录';
+  openModal('modal-record');
+}
+async function submitRecord(){
+  var id=document.getElementById('record-id').value;
+  var data={title:document.getElementById('record-title').value,category:document.getElementById('record-category').value,content:document.getElementById('record-content').value,date:document.getElementById('record-date').value,author:document.getElementById('record-author').value};
+  if(!data.title){showToast('请填写标题');return;}
+  if(supa){
+    if(id){data.id=parseInt(id);await supa.from('general_records').update(data).eq('id',parseInt(id));}
+    else{data.id=(cloudData.records.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1);data.created_at=nowStr();await supa.from('general_records').insert([data]);}
+    await loadCloudData();
+  }else{
+    if(id){var r=cloudData.records.find(function(x){return x.id===parseInt(id);});if(r)Object.assign(r,data);}
+    else{data.id=(cloudData.records.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1);data.created_at=nowStr();cloudData.records.push(data);}
+  }
+  showToast('记录已保存');closeModal('modal-record');renderPage();
+}
+async function deleteRecord(id){
+  if(!requireAdmin())return;
+  if(!confirm('确认删除这条记录？'))return;
+  if(supa)await supa.from('general_records').delete().eq('id',id);
+  cloudData.records=cloudData.records.filter(function(x){return x.id!==id;});
+  showToast('已删除');renderPage();
+}
+
+// ===== 侧边栏底部(管理员入口) =====
+function renderSidebarFooter(){
+  var el=document.getElementById('sidebarFooter');
+  if(!el)return;
+  if(isAdmin){
+    el.innerHTML='<div style="font-size:9px;color:#52c41a;margin-bottom:4px;">✅ 管理员模式</div><button class="btn btn-ghost btn-sm" style="width:100%;font-size:11px;" onclick="adminLogout()">退出管理</button>';
+  }else{
+    el.innerHTML='<button class="btn btn-ghost btn-sm" style="width:100%;font-size:11px;color:#999;" onclick="adminLogin()">🔐 管理员登录</button>';
+  }
+}
+
+// ===== 初始化 =====
+loadData();
+loadMonthlyStars();
+renderNav();
+renderSidebarFooter();
+renderPage();
+loadCloudData().then(function(){if(['knowledge','notices','records'].includes(currentPage))renderPage();});
+</script>
+</body>
+</html>
