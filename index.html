@@ -350,11 +350,28 @@ function numInput(id,val){
   return '<input type="number" class="edit-num" id="'+id+'" value="'+(val||0)+'" />';
 }
 function textInput(id,val){
-  return '<input type="text" class="edit-text" id="'+id+'" value="'+(val||'')+'" />';
+  return '<input type="text" class="edit-text" id="'+id+'" value="'+escAttr(val||'')+'" />';
+}
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function todayLabel(){var d=new Date();return (d.getMonth()+1)+'月'+d.getDate()+'日';}
+function memberSelect(id,selected,grp){
+  var names=(GROUPS&&GROUPS[grp])?GROUPS[grp].slice():[];
+  if(names.indexOf(selected)<0)names.push(selected);
+  var h='<select class="edit-text" id="'+id+'" onchange="onMemberSelectChange(this)">';
+  names.forEach(function(nm){h+='<option value="'+escAttr(nm)+'"'+(nm===selected?' selected':'')+'>'+escAttr(nm)+'</option>';});
+  h+='<option value="__manual__">✎ 手动输入新成员</option>';
+  h+='</select>';
+  return h;
+}
+function onMemberSelectChange(sel){
+  if(sel.value==='__manual__'){
+    var id=sel.id;
+    sel.outerHTML='<input type="text" class="edit-text" id="'+id+'" placeholder="输入新成员姓名" />';
+  }
 }
 // ===== 各数据类型的保存逻辑 =====
 function saveTD(){
-  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){
     ['第一组','第二组','第三组'].forEach(function(g){
       for(var ci=0;ci<TCOLS.length;ci++){
         var el=document.getElementById('td_'+w+'_'+g+'_'+ci);
@@ -407,7 +424,7 @@ function saveDD(){
         var se=document.getElementById('dd_'+day+'_'+n);
         var newName=ne?ne.value.trim()||n:n;
         var v=se?parseInt(se.value)||0:DD[wk][day][grp][n];
-        if(v>0)newData[newDay][grp][newName]=v;
+        if(newName)newData[newDay][grp][newName]=v;
       }
     }
   }
@@ -427,7 +444,7 @@ function savePDaily(){
         var se=document.getElementById('pdl_'+day+'_'+n);
         var newName=ne?ne.value.trim()||n:n;
         var v=se?parseInt(se.value)||0:DD[wk][day][grp][n];
-        if(v>0)newData[newDay][grp][newName]=v;
+        if(newName)newData[newDay][grp][newName]=v;
       }
     }
   }
@@ -499,7 +516,7 @@ function addMember(name,group){
   if(!GROUPS[group])group='第一组';
   if(getGroup(name)){showToast('该成员已存在（'+getGroup(name)+'）');renderPage();return;}
   GROUPS[group].push(name);
-  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){
     if(!PW[w])PW[w]={};PW[w][name]=0;
     if(!PD[w])PD[w]={};if(!PD[w][name])PD[w][name]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};
   });
@@ -509,7 +526,7 @@ function delMember(name){
   name=decodeURIComponent(name);
   if(!confirm('确认删除成员 '+name+'（将一并清除其所有积分记录）？'))return;
   for(var g in GROUPS){var i=GROUPS[g].indexOf(name);if(i>=0)GROUPS[g].splice(i,1);}
-  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
   for(var m in monthlyData)delete monthlyData[m][name];
   if(totalData)delete totalData[name];
   saveData();renderPage();showToast('已删除成员 '+name);
@@ -521,7 +538,7 @@ function delPW(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);
 function addPD(wk){if(!requireAdmin())return;if(!PD[wk])PD[wk]={};PD[wk][_uniq(PD[wk],'新成员')]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};detailWeek=wk;saveData();renderPage();showToast('已添加一行');}
 function delPD(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 的积分构成？'))return;delete PD[wk][name];saveData();renderPage();showToast('已删除');}
 // 每日记录 / 每日积分（DD）
-function addDDDay(wk){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};var d=_uniq(DD[wk],'新日期');DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};saveData();renderPage();showToast('已添加新日期');}
+function addDDDay(wk){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};var d=_uniq(DD[wk],todayLabel());DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};saveData();renderPage();showToast('已添加新日期：'+d);}
 function delDDDay(wk,day){if(!requireAdmin())return;day=decodeURIComponent(day);if(!confirm('确认删除 '+day+' 当天全部记录？'))return;delete DD[wk][day];saveData();renderPage();showToast('已删除');}
 function addDDItem(wk,day,grp){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};if(!DD[wk][day])DD[wk][day]={'第一组':{},'第二组':{},'第三组':{}};DD[wk][day][grp][_uniq(DD[wk][day][grp]||{},'新成员')]=0;saveData();renderPage();showToast('已添加一条');}
 function delDDItem(wk,day,grp,name){if(!requireAdmin())return;day=decodeURIComponent(day);name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 在'+day+'的该项记录？'))return;delete DD[wk][day][grp][name];saveData();renderPage();showToast('已删除');}
@@ -544,7 +561,7 @@ function delTDWeek(w){if(!requireAdmin())return;if(!confirm('确认删除 '+w+' 
 function syncRename(oldName,newName){
   if(!oldName||oldName===newName)return;
   for(var g in GROUPS){var i=GROUPS[g].indexOf(oldName);if(i>=0){if(GROUPS[g].indexOf(newName)<0)GROUPS[g][i]=newName;else GROUPS[g].splice(i,1);}}
-  ['W1','W2','W3','W4','W5','W6'].forEach(function(w){
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){
     if(PW[w]&&PW[w][oldName]!==undefined){PW[w][newName]=PW[w][oldName];delete PW[w][oldName];}
     if(PD[w]&&PD[w][oldName]){PD[w][newName]=PD[w][oldName];delete PD[w][oldName];}
   });
@@ -574,18 +591,17 @@ try{supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){conso
 
 // ===== 数据 =====
 const GROUPS={'第一组':['康信','赵峰','崔猛','何玉洁','陈吉林','易正昂'],'第二组':['陈俊孝','谢鹏鑫','宁崧莹','王新宇','刘宗频','詹志恒'],'第三组':['李龙海','梁毓翰','黄思维','张高丰','张婕']};
-let TD={W1:{'第一组':[0,0,0,1,0,2,3],'第二组':[0,0,0,1,0,2,3],'第三组':[0,3,0,1,0,2,6],star:'李龙海'},W2:{'第一组':[13,3,0,2,0,7,25],'第二组':[11,0,0,2,0,7,20],'第三组':[6,3,0,2,0,7,18],star:'何玉洁'},W3:{'第一组':[13,3,0,3,0,12,31],'第二组':[11,0,0,3,0,12,26],'第三组':[6,6,0,3,0,12,27],star:'李龙海'},W4:{'第一组':[13,3,0,4,0,18,38],'第二组':[11,0,0,4,0,18,33],'第三组':[6,9,0,4,0,18,37],star:'李龙海'},W5:{'第一组':[6,0,0,0,5,11,22],'第二组':[2,0,0,0,5,7,14],'第三组':[3,0,0,0,5,8,16],star:'何玉洁'},W6:{'第一组':[3,0,0,0,0,5,8],'第二组':[3,0,0,0,0,5,8],'第三组':[1,3,0,0,0,5,9],star:'李龙海'}};
+let TD={W1:{'第一组':[0,0,0,1,0,2,3],'第二组':[0,0,0,1,0,2,3],'第三组':[0,3,0,1,0,2,6],star:'李龙海'},W2:{'第一组':[13,3,0,2,0,7,25],'第二组':[11,0,0,2,0,7,20],'第三组':[6,3,0,2,0,7,18],star:'何玉洁'},W3:{'第一组':[13,3,0,3,0,12,31],'第二组':[11,0,0,3,0,12,26],'第三组':[6,6,0,3,0,12,27],star:'李龙海'},W4:{'第一组':[13,3,0,4,0,18,38],'第二组':[11,0,0,4,0,18,33],'第三组':[6,9,0,4,0,18,37],star:'李龙海'},W5:{'第一组':[6,0,0,0,5,11,22],'第二组':[2,0,0,0,5,7,14],'第三组':[3,0,0,0,5,8,16],star:'何玉洁'},W6:{'第一组':[3,0,0,0,0,5,8],'第二组':[3,0,0,0,0,5,8],'第三组':[1,3,0,0,0,5,9],star:'李龙海'},W7:{'第一组':[5,0,0,0,0,0,5],'第二组':[4,0,0,0,0,0,4],'第三组':[1,0,0,0,0,0,1],star:''}};
 const TCOLS=['课堂PK','每月挑战','项目实战','全组出勤','目标达成','日报按时','小计'];
-let PW={W1:{康信:3,何玉洁:7,赵峰:0,陈吉林:0,易正昂:2,崔猛:1,陈俊孝:2,宁崧莹:5,王新宇:5,刘宗频:1,谢鹏鑫:2,詹志恒:1,李龙海:8,张婕:1,梁毓翰:4,黄思维:1,张高丰:0},W2:{康信:10,何玉洁:14,赵峰:1,陈吉林:4,易正昂:7,崔猛:2,陈俊孝:15,宁崧莹:6,王新宇:7,刘宗频:5,谢鹏鑫:6,詹志恒:5,李龙海:20,张婕:1,梁毓翰:9,黄思维:3,张高丰:3},W3:{康信:2,何玉洁:6,赵峰:1,陈吉林:1,易正昂:2,崔猛:1,陈俊孝:2,宁崧莹:1,王新宇:4,刘宗频:2,谢鹏鑫:1,詹志恒:2,李龙海:5,张婕:1,梁毓翰:2,黄思维:3,张高丰:2},W4:{康信:2,何玉洁:11,赵峰:0,陈吉林:0,易正昂:0,崔猛:0,陈俊孝:0,宁崧莹:2,王新宇:2,刘宗频:0,谢鹏鑫:1,詹志恒:0,李龙海:12,张婕:2,梁毓翰:2,黄思维:0,张高丰:0},W5:{康信:5,何玉洁:10,赵峰:0,陈吉林:1,易正昂:2,崔猛:0,陈俊孝:0,宁崧莹:0,王新宇:5,刘宗频:1,谢鹏鑫:5,詹志恒:4,李龙海:9,张婕:2,梁毓翰:8,黄思维:0,张高丰:0},W6:{康信:2,赵峰:2,崔猛:4,何玉洁:6,陈吉林:0,易正昂:0,陈俊孝:0,宁崧莹:0,王新宇:2,刘宗频:0,谢鹏鑫:0,詹志恒:6,李龙海:9,张婕:0,梁毓翰:2,黄思维:0,张高丰:0}};
-let DD={W1:{'7月2日':{第一组:{康信:3,何玉洁:3,易正昂:2,崔猛:1},第二组:{陈俊孝:2,宁崧莹:5,王新宇:3,刘宗频:1,谢鹏鑫:2,詹志恒:1},第三组:{李龙海:5,张婕:1,梁毓翰:2,黄思维:1}},'7月3日':{第一组:{何玉洁:2},第二组:{},第三组:{}}},W2:{'7月6日':{第一组:{何玉洁:1},第二组:{陈俊孝:4,宁崧莹:1},第三组:{李龙海:2,黄思维:1}},'7月7日':{第一组:{何玉洁:2,陈吉林:1,易正昂:1},第二组:{刘宗频:1,詹志恒:1},第三组:{李龙海:4,张高丰:1}},'7月8日':{第一组:{康信:1,何玉洁:1},第二组:{},第三组:{李龙海:3}},'7月9日':{第一组:{康信:3,何玉洁:3,易正昂:2,崔猛:1},第二组:{陈俊孝:7,宁崧莹:3,王新宇:4,刘宗频:3,谢鹏鑫:5,詹志恒:3},第三组:{李龙海:5,张婕:1,梁毓翰:5,黄思维:2}},'7月10日':{第一组:{康信:3,何玉洁:2,赵峰:1,陈吉林:3,易正昂:3,崔猛:1},第二组:{陈俊孝:2,宁崧莹:1,王新宇:1,刘宗频:1,谢鹏鑫:1,詹志恒:1},第三组:{李龙海:2,梁毓翰:1,张高丰:1}},'7月11日':{第一组:{康信:3,何玉洁:3,易正昂:1},第二组:{陈俊孝:2,宁崧莹:1},第三组:{李龙海:1,梁毓翰:1,张高丰:1}}},W3:{'7月13日':{第一组:{康信:1,何玉洁:2,易正昂:1},第二组:{陈俊孝:1},第三组:{黄思维:2}},'7月14日':{第一组:{},第二组:{},第三组:{}},'7月15日':{第一组:{康信:1,何玉洁:2,赵峰:1,陈吉林:1,易正昂:1,崔猛:1},第二组:{陈俊孝:1,宁崧莹:1,王新宇:2,刘宗频:2,谢鹏鑫:1,詹志恒:2},第三组:{李龙海:2,张婕:1,黄思维:1,张高丰:2}},'7月16日':{第一组:{},第二组:{},第三组:{}},'7月17日':{第一组:{},第二组:{},第三组:{}}},W4:{'7月20日':{第一组:{何玉洁:2},第二组:{},第三组:{李龙海:2}},'7月21日':{第一组:{何玉洁:2},第二组:{},第三组:{}},'7月22日':{第一组:{康信:2,何玉洁:2},第二组:{宁崧莹:2,谢鹏鑫:1},第三组:{李龙海:4}},'7月23日':{第一组:{何玉洁:2},第二组:{},第三组:{李龙海:2}},'7月24日':{第一组:{},第二组:{},第三组:{张婕:2}},'7月25日':{第一组:{何玉洁:1},第二组:{},第三组:{李龙海:1}}},W5:{'7月28日':{第一组:{康信:1,何玉洁:4,陈吉林:1,易正昂:2},第二组:{王新宇:3,刘宗频:1,谢鹏鑫:3,詹志恒:2},第三组:{李龙海:2,梁毓翰:2}},'7月29日':{第一组:{何玉洁:2},第二组:{},第三组:{}},'7月30日':{第一组:{康信:2,何玉洁:2},第二组:{谢鹏鑫:2},第三组:{李龙海:2,梁毓翰:2}},'7月31日':{第一组:{康信:2},第二组:{詹志恒:2},第三组:{李龙海:2}},'8月1日':{第一组:{},第二组:{},第三组:{张婕:2,梁毓翰:2}}},W6:{'8月3日':{第一组:{},第二组:{},第三组:{李龙海:2}},'8月4日':{第一组:{崔猛:2,赵峰:2,何玉洁:2,康信:2},第二组:{},第三组:{}},'8月5日':{第一组:{},第二组:{詹志恒:2},第三组:{}},'8月6日':{第一组:{崔猛:2},第二组:{},第三组:{}},'8月7日':{第一组:{何玉洁:2},第二组:{},第三组:{}},'8月8日':{第一组:{},第二组:{詹志恒:2},第三组:{李龙海:2}}}};
-// PD=个人每周积分明细(Personal Detail): a=A类角色,sp=发言,an=回答,ho=主持,re=反思,di=日报,st=之星,t=合计
+let PW={W1:{康信:3,何玉洁:7,赵峰:0,陈吉林:0,易正昂:2,崔猛:1,陈俊孝:2,宁崧莹:5,王新宇:5,刘宗频:1,谢鹏鑫:2,詹志恒:1,李龙海:8,张婕:1,梁毓翰:4,黄思维:1,张高丰:0},W2:{康信:10,何玉洁:14,赵峰:1,陈吉林:4,易正昂:7,崔猛:2,陈俊孝:15,宁崧莹:6,王新宇:7,刘宗频:5,谢鹏鑫:6,詹志恒:5,李龙海:20,张婕:1,梁毓翰:9,黄思维:3,张高丰:3},W3:{康信:2,何玉洁:6,赵峰:1,陈吉林:1,易正昂:2,崔猛:1,陈俊孝:2,宁崧莹:1,王新宇:4,刘宗频:2,谢鹏鑫:1,詹志恒:2,李龙海:5,张婕:1,梁毓翰:2,黄思维:3,张高丰:2},W4:{康信:2,何玉洁:11,赵峰:0,陈吉林:0,易正昂:0,崔猛:0,陈俊孝:0,宁崧莹:2,王新宇:2,刘宗频:0,谢鹏鑫:1,詹志恒:0,李龙海:12,张婕:2,梁毓翰:2,黄思维:0,张高丰:0},W5:{康信:5,何玉洁:10,赵峰:0,陈吉林:1,易正昂:2,崔猛:0,陈俊孝:0,宁崧莹:0,王新宇:5,刘宗频:1,谢鹏鑫:5,詹志恒:4,李龙海:9,张婕:2,梁毓翰:8,黄思维:0,张高丰:0},W6:{康信:2,赵峰:2,崔猛:4,何玉洁:6,陈吉林:0,易正昂:0,陈俊孝:0,宁崧莹:0,王新宇:2,刘宗频:0,谢鹏鑫:0,詹志恒:6,李龙海:9,张婕:0,梁毓翰:2,黄思维:0,张高丰:0},W7:{康信:0,赵峰:1,崔猛:0,何玉洁:4,陈吉林:0,易正昂:0,陈俊孝:1,宁崧莹:0,王新宇:1,刘宗频:0,谢鹏鑫:1,詹志恒:2,李龙海:0,梁毓翰:0,黄思维:3,张高丰:0,张婕:0}};
+let DD={'W1':{'7月2日':{'第一组':{'康信':3,'何玉洁':3,'易正昂':2,'崔猛':1},'第二组':{'陈俊孝':2,'宁崧莹':5,'王新宇':3,'刘宗频':1,'谢鹏鑫':2,'詹志恒':1},'第三组':{'李龙海':5,'张婕':1,'梁毓翰':2,'黄思维':1}},'7月3日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{}}},'W2':{'7月6日':{'第一组':{'何玉洁':1},'第二组':{'陈俊孝':4,'宁崧莹':1},'第三组':{'李龙海':2,'黄思维':1}},'7月7日':{'第一组':{'何玉洁':2,'陈吉林':1,'易正昂':1},'第二组':{'刘宗频':1,'詹志恒':1},'第三组':{'李龙海':4,'张高丰':1}},'7月8日':{'第一组':{'康信':1,'何玉洁':1},'第二组':{},'第三组':{'李龙海':3}},'7月9日':{'第一组':{'康信':3,'何玉洁':3,'易正昂':2,'崔猛':1},'第二组':{'陈俊孝':7,'宁崧莹':3,'王新宇':4,'刘宗频':3,'谢鹏鑫':5,'詹志恒':3},'第三组':{'李龙海':5,'张婕':1,'梁毓翰':5,'黄思维':2}},'7月10日':{'第一组':{'康信':3,'何玉洁':2,'赵峰':1,'陈吉林':3,'易正昂':3,'崔猛':1},'第二组':{'陈俊孝':2,'宁崧莹':1,'王新宇':1,'刘宗频':1,'谢鹏鑫':1,'詹志恒':1},'第三组':{'李龙海':2,'梁毓翰':1,'张高丰':1}},'7月11日':{'第一组':{'康信':3,'何玉洁':3,'易正昂':1},'第二组':{'陈俊孝':2,'宁崧莹':1},'第三组':{'李龙海':1,'梁毓翰':1,'张高丰':1}}},'W3':{'7月13日':{'第一组':{'康信':1,'何玉洁':2,'易正昂':1},'第二组':{'陈俊孝':1},'第三组':{'黄思维':2}},'7月14日':{'第一组':{},'第二组':{},'第三组':{}},'7月15日':{'第一组':{'康信':1,'何玉洁':2,'赵峰':1,'陈吉林':1,'易正昂':1,'崔猛':1},'第二组':{'陈俊孝':1,'宁崧莹':1,'王新宇':2,'刘宗频':2,'谢鹏鑫':1,'詹志恒':2},'第三组':{'李龙海':2,'张婕':1,'黄思维':1,'张高丰':2}},'7月16日':{'第一组':{},'第二组':{},'第三组':{}},'7月17日':{'第一组':{},'第二组':{},'第三组':{}}},'W4':{'7月20日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{'李龙海':2}},'7月21日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{}},'7月22日':{'第一组':{'康信':2,'何玉洁':2},'第二组':{'宁崧莹':2,'谢鹏鑫':1},'第三组':{'李龙海':4}},'7月23日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{'李龙海':2}},'7月24日':{'第一组':{},'第二组':{},'第三组':{'张婕':2}},'7月25日':{'第一组':{'何玉洁':1},'第二组':{},'第三组':{'李龙海':1}}},'W5':{'7月28日':{'第一组':{'康信':1,'何玉洁':4,'陈吉林':1,'易正昂':2},'第二组':{'王新宇':3,'刘宗频':1,'谢鹏鑫':3,'詹志恒':2},'第三组':{'李龙海':2,'梁毓翰':2}},'7月29日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{}},'7月30日':{'第一组':{'康信':2,'何玉洁':2},'第二组':{'谢鹏鑫':2},'第三组':{'李龙海':2,'梁毓翰':2}},'7月31日':{'第一组':{'康信':2},'第二组':{'詹志恒':2},'第三组':{'李龙海':2}},'8月1日':{'第一组':{},'第二组':{},'第三组':{'张婕':2,'梁毓翰':2}}},'W6':{'8月3日':{'第一组':{},'第二组':{},'第三组':{'李龙海':2}},'8月4日':{'第一组':{'崔猛':2,'赵峰':2,'何玉洁':2,'康信':2},'第二组':{},'第三组':{}},'8月5日':{'第一组':{},'第二组':{'詹志恒':2},'第三组':{}},'8月6日':{'第一组':{'崔猛':2},'第二组':{},'第三组':{}},'8月7日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{}},'8月8日':{'第一组':{},'第二组':{'詹志恒':2},'第三组':{'李龙海':2}}},'W7':{'8月10日':{'第一组':{'何玉洁':2},'第二组':{},'第三组':{}},'8月11日':{'第一组':{'赵峰':1,'何玉洁':2},'第二组':{'陈俊孝':1,'王新宇':1,'谢鹏鑫':1,'詹志恒':2},'第三组':{'黄思维':3}}}};
 let PD={
 W1:{康信:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3},何玉洁:{a:2,sp:3,an:0,ho:0,re:0,di:0,st:2,t:7},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},崔猛:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈俊孝:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},宁崧莹:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:2,t:5},王新宇:{a:2,sp:3,an:0,ho:0,re:0,di:0,st:0,t:5},刘宗频:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},谢鹏鑫:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},詹志恒:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},李龙海:{a:3,sp:3,an:0,ho:0,re:0,di:2,st:0,t:8},张婕:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},梁毓翰:{a:2,sp:2,an:0,ho:0,re:0,di:0,st:0,t:4},黄思维:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},
 W2:{康信:{a:0,sp:10,an:0,ho:0,re:0,di:0,st:0,t:10},何玉洁:{a:2,sp:12,an:0,ho:0,re:0,di:0,st:0,t:14},赵峰:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈吉林:{a:0,sp:2,an:0,ho:0,re:0,di:2,st:0,t:4},易正昂:{a:0,sp:7,an:0,ho:0,re:0,di:0,st:0,t:7},崔猛:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},陈俊孝:{a:0,sp:11,an:0,ho:0,re:0,di:0,st:4,t:15},宁崧莹:{a:0,sp:6,an:0,ho:0,re:0,di:0,st:0,t:6},王新宇:{a:2,sp:5,an:0,ho:0,re:0,di:0,st:0,t:7},刘宗频:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},谢鹏鑫:{a:0,sp:6,an:0,ho:0,re:0,di:0,st:0,t:6},詹志恒:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},李龙海:{a:3,sp:9,an:0,ho:0,re:0,di:8,st:0,t:20},张婕:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},梁毓翰:{a:2,sp:4,an:0,ho:3,re:0,di:0,st:0,t:9},黄思维:{a:0,sp:1,an:0,ho:0,re:0,di:2,st:0,t:3},张高丰:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3}},
 W3:{康信:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},何玉洁:{a:2,sp:4,an:0,ho:0,re:0,di:0,st:0,t:6},赵峰:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈吉林:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},易正昂:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},崔猛:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},陈俊孝:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},宁崧莹:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},王新宇:{a:2,sp:2,an:0,ho:0,re:0,di:0,st:0,t:4},刘宗频:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},谢鹏鑫:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},詹志恒:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},李龙海:{a:3,sp:2,an:0,ho:0,re:0,di:0,st:0,t:5},张婕:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3},张高丰:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2}},
 W4:{康信:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},何玉洁:{a:2,sp:1,an:0,ho:0,re:0,di:8,st:0,t:11},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},王新宇:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},刘宗频:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},谢鹏鑫:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},詹志恒:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},李龙海:{a:3,sp:3,an:0,ho:0,re:0,di:6,st:0,t:12},张婕:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},
 W5:{康信:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},何玉洁:{a:2,sp:8,an:0,ho:0,re:0,di:0,st:0,t:10},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈吉林:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},易正昂:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},王新宇:{a:2,sp:3,an:0,ho:0,re:0,di:0,st:0,t:5},刘宗频:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},谢鹏鑫:{a:0,sp:5,an:0,ho:0,re:0,di:0,st:0,t:5},詹志恒:{a:0,sp:4,an:0,ho:0,re:0,di:0,st:0,t:4},李龙海:{a:3,sp:6,an:0,ho:0,re:0,di:0,st:0,t:9},张婕:{a:0,sp:2,an:0,ho:0,re:0,di:0,st:0,t:2},梁毓翰:{a:2,sp:6,an:0,ho:0,re:0,di:0,st:0,t:8},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},
-W6:{康信:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:0,t:4},何玉洁:{a:2,sp:0,an:0,ho:0,re:0,di:4,st:0,t:6},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},王新宇:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},刘宗频:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},谢鹏鑫:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},詹志恒:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:2,t:6},李龙海:{a:3,sp:0,an:0,ho:0,re:0,di:4,st:2,t:9},张婕:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}}
+W6:{康信:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},赵峰:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:0,t:4},何玉洁:{a:2,sp:0,an:0,ho:0,re:0,di:4,st:0,t:6},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},宁崧莹:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},王新宇:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},刘宗频:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},谢鹏鑫:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},詹志恒:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:2,t:6},李龙海:{a:3,sp:0,an:0,ho:0,re:0,di:4,st:2,t:9},张婕:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},梁毓翰:{a:2,sp:0,an:0,ho:0,re:0,di:0,st:0,t:2},黄思维:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}},W7:{康信:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},赵峰:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},崔猛:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},何玉洁:{a:0,sp:0,an:0,ho:0,re:0,di:4,st:0,t:4},陈吉林:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},易正昂:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},陈俊孝:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},宁崧莹:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},王新宇:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},刘宗频:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},谢鹏鑫:{a:0,sp:1,an:0,ho:0,re:0,di:0,st:0,t:1},詹志恒:{a:0,sp:0,an:0,ho:0,re:0,di:2,st:0,t:2},李龙海:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},梁毓翰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},黄思维:{a:0,sp:3,an:0,ho:0,re:0,di:0,st:0,t:3},张高丰:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0},张婕:{a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0}}
 };
 
 // 优秀日报记录
@@ -599,7 +615,10 @@ let DB=[
   {week:'W6',date:'8月6日',name:'崔猛',score:18,group:'第一组'},
   {week:'W6',date:'8月7日',name:'何玉洁',score:20,group:'第一组'},
   {week:'W6',date:'8月8日',name:'詹志恒',score:19,group:'第二组'},
-  {week:'W6',date:'8月8日',name:'李龙海',score:19,group:'第三组'}
+  {week:'W6',date:'8月8日',name:'李龙海',score:19,group:'第三组'},
+  {week:'W7',date:'8月10日',name:'何玉洁',score:2,group:'第一组'},
+  {week:'W7',date:'8月11日',name:'何玉洁',score:2,group:'第一组'},
+  {week:'W7',date:'8月11日',name:'詹志恒',score:2,group:'第二组'}
 ];
 
 // 每周之星数据
@@ -821,7 +840,7 @@ function pageOverview(){
   if(overviewData.totalPersonal!==undefined)totalPersonal=overviewData.totalPersonal;
   if(overviewData.stage2Total!==undefined)stage2Total=overviewData.stage2Total;
   var studentCount=overviewData.studentCount!==undefined?overviewData.studentCount:names.length;
-  var weekCount=overviewData.weekCount!==undefined?overviewData.weekCount:6;
+  var weekCount=overviewData.weekCount!==undefined?overviewData.weekCount:7;
   const s1=getStage1Rank();
   const s2=getStage2Rank();
   var ovEdit=editSections['overview-list'];
@@ -852,7 +871,7 @@ function pageOverview(){
   });
   h+=`</div>`;
   // 段位分布（参考 BI 分布统计）
-  var wksAll=['W1','W2','W3','W4','W5','W6'];
+  var wksAll=['W1','W2','W3','W4','W5','W6','W7'];
   var dist={};
   getAllNames().forEach(function(n){var l=getLevel(getTotalByWeek(n,wksAll));dist[l.name]=(dist[l.name]||0)+1;});
   h+='<div class="card"><div class="card-title">🏅 段位分布</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
@@ -927,7 +946,7 @@ let weeklySelected='W1';
 function pageWeekly(){
   let h=`<div class="page-title">🏆 每周积分 ${editBtn('pw-list', abBtn('➕添加成员','addMemberPrompt()'))}</div>`;
   h+=`<div class="filter-bar">`;
-  ['W1','W2','W3','W4','W5','W6'].forEach(w=>{h+=`<div class="filter-btn${w===weeklySelected?' active':''}" data-week="${w}">${w}</div>`;});
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(w=>{h+=`<div class="filter-btn${w===weeklySelected?' active':''}" data-week="${w}">${w}</div>`;});
   h+=`</div>`;
   h+=`<div id="weeklyList">${renderWeeklyList(weeklySelected)}</div>`;
   return h;
@@ -964,7 +983,7 @@ function pageMonthly(){
   const names=getAllNames();
   const months=[
     {label:'7月',key:'7月',wks:['W1','W2','W3','W4']},
-    {label:'8月',key:'8月',wks:['W5','W6']}
+    {label:'8月',key:'8月',wks:['W5','W6','W7']}
   ];
   var mEdit=editSections['monthly-list'];
   let h='<div class="page-title">🏆 每月积分 '+editBtn('monthly-list', abBtn('➕添加成员','addMemberPrompt()'))+'</div>';
@@ -995,7 +1014,7 @@ function pageMonthly(){
 // === 总积分排行 ===
 function pageTotal(){
   const names=getAllNames();
-  const wks=['W1','W2','W3','W4','W5','W6'];
+  const wks=['W1','W2','W3','W4','W5','W6','W7'];
   var tEdit=editSections['total-list'];
   let arr=names.map(n=>{
     var score=totalData[n]!==undefined?totalData[n]:getTotalByWeek(n,wks);
@@ -1025,7 +1044,7 @@ function pageDaily(pageId){
   let title=pageId==='daily-detail'?'📋 每日明细':'🏆 每日积分';
   let h='<div class="page-title">'+title+' '+editBtn('pdaily-list', abBtn('➕添加日期','addDDDay(\''+dailySelected+'\')'))+'</div>';
   h+='<div class="filter-bar">';
-  ['W1','W2','W3','W4','W5','W6'].forEach(w=>{h+='<div class="filter-btn'+(w===dailySelected?' active':'')+'" data-dweek="'+w+'">'+w+'</div>';});
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(w=>{h+='<div class="filter-btn'+(w===dailySelected?' active':'')+'" data-dweek="'+w+'">'+w+'</div>';});
   h+='</div>';
   h+='<div id="dailyList">'+renderDailyList(dailySelected)+'</div>';
   return h;
@@ -1045,9 +1064,12 @@ function renderDailyList(wk){
       h+='<div class="day-block"><div class="day-header">'+day+'</div><div class="day-items">';
     }
     for(let grp in data[day]){
-      for(let n in data[day][grp]){
+      var grpOrder=GROUPS[grp]||[];
+      var pdlNames=Object.keys(data[day][grp]).sort(function(a,b){var ia=grpOrder.indexOf(a),ib=grpOrder.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib;});
+      for(let di=0;di<pdlNames.length;di++){
+        var n=pdlNames[di];
         if(dlEdit){
-          h+='<span class="day-tag">'+textInput('pdl_name_'+day+'_'+n,n)+'<span class="pts">'+numInput('pdl_'+day+'_'+n,data[day][grp][n])+'</span> <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:10px" onclick="delDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\''+grp+'\',\''+encodeURIComponent(n)+'\')">✕</button></span>';
+          h+='<span class="day-tag">'+memberSelect('pdl_name_'+day+'_'+n,n,grp)+'<span class="pts">'+numInput('pdl_'+day+'_'+n,data[day][grp][n])+'</span> <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:10px" onclick="delDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\''+grp+'\',\''+encodeURIComponent(n)+'\')">✕</button></span>';
         } else {
           h+='<span class="day-tag">'+n+'<span class="pts">+'+data[day][grp][n]+'</span></span>';
         }
@@ -1074,7 +1096,7 @@ let detailWeek='W1';
 function pageDailyDetail(){
   let h=`<div class="page-title">📋 每日明细</div>`;
   h+=`<div class="filter-bar">`;
-  ['W1','W2','W3','W4','W5','W6'].forEach(w=>{h+=`<div class="filter-btn${w===detailWeek?' active':''}" data-dtweek="${w}">${w}</div>`;});
+  ['W1','W2','W3','W4','W5','W6','W7'].forEach(w=>{h+=`<div class="filter-btn${w===detailWeek?' active':''}" data-dtweek="${w}">${w}</div>`;});
   h+=`</div>`;
   h+=`<div class="card"><div class="card-title">📝 每日记录 ${editBtn('dd-list', abBtn('➕添加日期','addDDDay(\''+detailWeek+'\')'))}</div><div id="detailDaily">${renderDetailDaily(detailWeek)}</div></div>`;
   h+=`<div class="card"><div class="card-title">📊 本周积分构成 ${editBtn('pd-table', abBtn('➕添加成员','addMemberPrompt()'))}</div><div id="detailComp">${renderDetailComp(detailWeek)}</div></div>`;
@@ -1112,9 +1134,12 @@ function renderDetailDaily(wk){
       h+='<div class="day-block"><div class="day-header">'+day+'</div><div class="day-items">';
     }
     for(let grp in data[day]){
-      for(let n in data[day][grp]){
+      var grpOrder=GROUPS[grp]||[];
+      var ddNames=Object.keys(data[day][grp]).sort(function(a,b){var ia=grpOrder.indexOf(a),ib=grpOrder.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib;});
+      for(let di=0;di<ddNames.length;di++){
+        var n=ddNames[di];
         if(ddEdit){
-          h+='<span class="day-tag">'+textInput('dd_name_'+day+'_'+n,n)+'<span class="pts">'+numInput('dd_'+day+'_'+n,data[day][grp][n])+'</span> <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:10px" onclick="delDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\''+grp+'\',\''+encodeURIComponent(n)+'\')">✕</button></span>';
+          h+='<span class="day-tag">'+memberSelect('dd_name_'+day+'_'+n,n,grp)+'<span class="pts">'+numInput('dd_'+day+'_'+n,data[day][grp][n])+'</span> <button class="btn btn-danger btn-sm" style="padding:0 4px;font-size:10px" onclick="delDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\''+grp+'\',\''+encodeURIComponent(n)+'\')">✕</button></span>';
         } else {
           h+='<span class="day-tag">'+n+'<span class="pts">+'+data[day][grp][n]+'</span></span>';
         }
@@ -1383,7 +1408,7 @@ function fyZip(files){
   return out;
 }
 function exportData(){
-  var wks=['W1','W2','W3','W4','W5','W6'];
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];
   var names=getAllNames();
   var rowsList=[],widthsList=[],namesList=[];
   // 1 每周积分
@@ -1397,7 +1422,7 @@ function exportData(){
   rowsList.push(r1);widthsList.push([12,10,8,8,8,8,8,8,10]);namesList.push('每周积分');
   // 2 每月积分
   var r2=[];
-  var months=[{l:'7月',k:'7月',w:['W1','W2','W3','W4']},{l:'8月',k:'8月',w:['W5','W6']}];
+  var months=[{l:'7月',k:'7月',w:['W1','W2','W3','W4']},{l:'8月',k:'8月',w:['W5','W6','W7']}];
   months.forEach(function(m){
     r2.push([{v:'（'+m.l+'）',s:1}]);
     r2.push([{v:'姓名',s:1},{v:'组别',s:1},{v:'分数',s:1}]);
@@ -1476,7 +1501,7 @@ function bindProfile(){
 }
 function renderProfile(){
   var el=document.getElementById('profBody');if(!el)return;
-  var n=profileSel;var wks=['W1','W2','W3','W4','W5','W6'];
+  var n=profileSel;var wks=['W1','W2','W3','W4','W5','W6','W7'];
   var row=wks.map(w=>(PW[w]&&PW[w][n]!==undefined)?PW[w][n]:0);
   var total=row.reduce((a,b)=>a+b,0);
   var lv=getLevel(total);
@@ -1496,7 +1521,7 @@ function renderProfile(){
 }
 function drawProfChart(){
   var canvas=document.getElementById('profChart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6'];
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];
   var data=wks.map(w=>(PW[w]&&PW[w][profileSel]!==undefined)?PW[w][profileSel]:0);
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=200;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
@@ -1526,7 +1551,7 @@ function doSearch(){
   var el=document.getElementById('searchInput');if(!el)return;
   var kw=el.value.trim();
   var box=document.getElementById('searchResult');if(!box)return;
-  var wks=['W1','W2','W3','W4','W5','W6'];
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];
   if(!kw){box.innerHTML='<p style="font-size:12px;color:#999;text-align:center;padding:12px">输入关键字开始搜索</p>';return;}
   var names=getAllNames().filter(function(n){return n.indexOf(kw)>=0;});
   if(!names.length){box.innerHTML='<p style="font-size:12px;color:#999;text-align:center;padding:12px">未找到匹配的学员</p>';return;}
@@ -1594,7 +1619,7 @@ function initCompare(){
   const doCmp=()=>{
     const na=a.value,nb=b.value;
     if(!na||!nb){document.getElementById('cmpResult').innerHTML='<div style="color:#999;font-size:12px;text-align:center;padding:10px">请选择两位学员</div>';return;}
-    const wks=['W1','W2','W3','W4','W5','W6'];
+    const wks=['W1','W2','W3','W4','W5','W6','W7'];
     let h=`<table class="cmp-table"><tr><th>周次</th><th>${na}${levelBadge(getTotalByWeek(na,wks))}</th><th>${nb}${levelBadge(getTotalByWeek(nb,wks))}</th></tr>`;
     let ta=0,tb=0;
     wks.forEach(w=>{
@@ -1647,7 +1672,7 @@ function renderTrendContent(){
 
 // 1. 各小组趋势
 function renderGroupTrend(){
-  var wks=['W1','W2','W3','W4','W5','W6'];
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];
   var groups=Object.keys(GROUPS);
   var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var h='<div class="trend-section-title">📊 各小组每周积分走势<span class="trend-subtitle">— 折线图对比</span></div>';
@@ -1666,7 +1691,7 @@ function renderGroupTrend(){
 }
 function drawGroupLineChart(){
   var canvas=document.getElementById('groupLineChart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6'];var groups=Object.keys(GROUPS);
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];var groups=Object.keys(GROUPS);
   var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=240;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
@@ -1689,7 +1714,7 @@ function drawGroupLineChart(){
 
 // 2. 个人趋势
 function renderIndividualTrend(){
-  var names=getAllNames();var wks=['W1','W2','W3','W4','W5','W6'];
+  var names=getAllNames();var wks=['W1','W2','W3','W4','W5','W6','W7'];
   var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var h='<div class="trend-section-title">👤 个人积分趋势<span class="trend-subtitle">— 按时间轴查看每人每周得分</span></div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">';
@@ -1712,7 +1737,7 @@ function renderIndividualTrend(){
 function drawIndividualChart(){if(trendView==='weekly')drawIndWeeklyChart();else drawIndDailyChart();}
 function drawIndWeeklyChart(){
   var canvas=document.getElementById('indLineChart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
@@ -1737,7 +1762,7 @@ function drawIndDailyChart(){
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-  var days=[];['W1','W2','W3','W4','W5','W6'].forEach(function(w){if(DD[w])for(var d in DD[w])days.push({date:d,week:w});});
+  var days=[];['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){if(DD[w])for(var d in DD[w])days.push({date:d,week:w});});
   days.sort(function(a,b){return a.date.localeCompare(b.date);});
   if(!days.length){ctx.fillStyle='#999';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('暂无每日数据',W/2,H/2);return;}
   var ml=36,mr=10,mt=20,mb=50;var cW=W-ml-mr,cH=H-mt-mb;
@@ -1766,7 +1791,7 @@ function renderMemberTrend(){
   return h;
 }
 function drawMemberCharts(){
-  var wks=['W1','W2','W3','W4','W5','W6'];var groups=Object.keys(GROUPS);
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];var groups=Object.keys(GROUPS);
   var lineColors=['#667eea','#9b8fd4','#4a90d9','#7bb8f0','#357abd','#1a5276'];
   groups.forEach(function(g,gi){
     var canvas=document.getElementById('memberChart_'+gi);if(!canvas)return;
@@ -1793,7 +1818,7 @@ function drawMemberCharts(){
 
 // 4. 建议视图
 function renderSuggestionTrend(){
-  var wks=['W1','W2','W3','W4','W5','W6'];
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];
   var h='<div class="trend-section-title">💡 建议增加的视图</div>';
   h+='<div class="card" style="font-size:12px;color:#666;line-height:1.8">';
   h+='<p><strong>1. 累计积分增长曲线</strong> — 展示每人从W1到当前周的累计积分增长轨迹，看谁进步最快</p>';
@@ -1816,7 +1841,7 @@ function drawSuggestionCharts(){drawCumulativeChart();drawTop5Chart();var sel=do
 function drawCumulativeChart(){
   var canvas=document.getElementById('cumulativeChart');if(!canvas)return;
   var sel=document.getElementById('sugPersonSel');var person=sel?sel.value:'李龙海';
-  var wks=['W1','W2','W3','W4','W5','W6'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
@@ -1837,7 +1862,7 @@ function drawCumulativeChart(){
 }
 function drawTop5Chart(){
   var canvas=document.getElementById('top5Chart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6'];var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var wks=['W1','W2','W3','W4','W5','W6','W7'];var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
   var ml=44,mr=16,mt=16,mb=36;var cW=W-ml-mr,cH=H-mt-mb;
