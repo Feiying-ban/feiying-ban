@@ -540,7 +540,7 @@ function delPD(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);
 // 每日记录 / 每日积分（DD）
 function addDDDay(wk){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};var d=_uniq(DD[wk],todayLabel());DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};saveData();renderPage();showToast('已添加新日期：'+d);}
 function delDDDay(wk,day){if(!requireAdmin())return;day=decodeURIComponent(day);if(!confirm('确认删除 '+day+' 当天全部记录？'))return;delete DD[wk][day];saveData();renderPage();showToast('已删除');}
-function addDDItem(wk,day,grp){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};if(!DD[wk][day])DD[wk][day]={'第一组':{},'第二组':{},'第三组':{}};DD[wk][day][grp][_uniq(DD[wk][day][grp]||{},'新成员')]=0;saveData();renderPage();showToast('已添加一条');}
+function addDDItem(wk,day,grp){if(!requireAdmin())return;day=decodeURIComponent(day);if(!DD[wk])DD[wk]={};if(!DD[wk][day])DD[wk][day]={'第一组':{},'第二组':{},'第三组':{}};DD[wk][day][grp][_uniq(DD[wk][day][grp]||{},'新成员')]=0;saveData();renderPage();showToast('已添加一条');}
 function delDDItem(wk,day,grp,name){if(!requireAdmin())return;day=decodeURIComponent(day);name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 在'+day+'的该项记录？'))return;delete DD[wk][day][grp][name];saveData();renderPage();showToast('已删除');}
 // 优秀日报 / 每周之星 / 每月之星（数组型）
 function addDB(){if(!requireAdmin())return;DB.push({week:'W?',date:'新日期',name:'新成员',score:0,group:''});saveData();renderPage();showToast('已添加一行');}
@@ -653,6 +653,35 @@ function saveData(){
     localStorage.setItem('fy_overview_data',JSON.stringify(overviewData));
   }catch(e){}
 }
+// 清洗每日明细中被错误编码的日期 key（早期 addDDItem 漏 decode 导致 8%E6%9C%88... 这类乱码 key）
+function cleanDDKeys(){
+  var changed=false;
+  for(var wk in DD){
+    for(var day in DD[wk]){
+      if(day.indexOf('%')>=0){
+        try{
+          var real=decodeURIComponent(day);
+          if(real!==day){
+            if(!DD[wk][real]){DD[wk][real]=DD[wk][day];}
+            else{
+              for(var g in DD[wk][day]){
+                if(!DD[wk][real][g]){DD[wk][real][g]=DD[wk][day][g];}
+                else{
+                  for(var nm in DD[wk][day][g]){
+                    if(DD[wk][real][g][nm]===undefined||DD[wk][real][g][nm]===0)DD[wk][real][g][nm]=DD[wk][day][g][nm];
+                  }
+                }
+              }
+            }
+            delete DD[wk][day];
+            changed=true;
+          }
+        }catch(e){}
+      }
+    }
+  }
+  if(changed)saveData();
+}
 function loadData(){
   try{
     var d;
@@ -667,6 +696,7 @@ function loadData(){
     d=localStorage.getItem('fy_total_data');if(d)totalData=JSON.parse(d);
     d=localStorage.getItem('fy_overview_data');if(d)overviewData=JSON.parse(d);
   }catch(e){}
+  cleanDDKeys();
 }
 
 // ===== 云端数据加载 =====
