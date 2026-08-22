@@ -309,6 +309,17 @@ select{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="width:380px;max-width:90vw">
+    <div class="modal-header"><h3>请确认</h3></div>
+    <div class="modal-body"><p id="confirm-msg" style="margin:0;font-size:14px;line-height:1.7;color:#333"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeConfirm()">取消</button>
+      <button class="btn btn-danger" onclick="runConfirm()">确定删除</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ===== 管理员权限 =====
@@ -548,19 +559,21 @@ function addMember(name,group){
 }
 function delMember(name){
   name=decodeURIComponent(name);
-  if(!confirm('确认删除成员 '+name+'（将一并清除其所有积分记录）？'))return;
-  for(var g in GROUPS){var i=GROUPS[g].indexOf(name);if(i>=0)GROUPS[g].splice(i,1);}
-  allWeeks().forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
-  for(var m in monthlyData)delete monthlyData[m][name];
-  if(totalData)delete totalData[name];
-  saveData();renderPage();showToast('已删除成员 '+name);
+  if(!requireAdmin())return;
+  confirmDialog('确认删除成员 '+name+'（将一并清除其所有积分记录）？', function(){
+    for(var g in GROUPS){var i=GROUPS[g].indexOf(name);if(i>=0)GROUPS[g].splice(i,1);}
+    allWeeks().forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
+    for(var m in monthlyData)delete monthlyData[m][name];
+    if(totalData)delete totalData[name];
+    saveData();renderPage();showToast('已删除成员 '+name);
+  });
 }
 // 每周积分
 function addPW(wk){if(!requireAdmin())return;if(!PW[wk])PW[wk]={};PW[wk][_uniq(PW[wk],'新成员')]=0;weeklySelected=wk;saveData();renderPage();showToast('已添加一行');}
-function delPW(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 的本项积分？'))return;delete PW[wk][name];saveData();renderPage();showToast('已删除');}
+function delPW(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);confirmDialog('确认删除 '+name+' 的本项积分？', function(){delete PW[wk][name];saveData();renderPage();showToast('已删除');});}
 // 本周积分构成
 function addPD(wk){if(!requireAdmin())return;if(!PD[wk])PD[wk]={};PD[wk][_uniq(PD[wk],'新成员')]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};detailWeek=wk;saveData();renderPage();showToast('已添加一行');}
-function delPD(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 的积分构成？'))return;delete PD[wk][name];saveData();renderPage();showToast('已删除');}
+function delPD(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);confirmDialog('确认删除 '+name+' 的积分构成？', function(){delete PD[wk][name];saveData();renderPage();showToast('已删除');});}
 // 每日记录 / 每日积分（DD）
 var dateModalWk='W1';
 function addDDDay(wk){if(!requireAdmin())return;openDateModal(wk);}
@@ -595,16 +608,16 @@ function submitDate(){
   DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};
   saveData();closeModal('modal-date');renderPage();showToast('已添加新日期：'+d);
 }
-function delDDDay(wk,day){if(!requireAdmin())return;day=decodeURIComponent(day);if(!confirm('确认删除 '+day+' 当天全部记录？'))return;delete DD[wk][day];saveData();renderPage();showToast('已删除');}
+function delDDDay(wk,day){if(!requireAdmin())return;day=decodeURIComponent(day);confirmDialog('确认删除 '+day+' 当天全部记录？', function(){delete DD[wk][day];saveData();renderPage();showToast('已删除');});}
 function addDDItem(wk,day,grp){if(!requireAdmin())return;day=decodeURIComponent(day);if(!DD[wk])DD[wk]={};if(!DD[wk][day])DD[wk][day]={'第一组':{},'第二组':{},'第三组':{}};DD[wk][day][grp][_uniq(DD[wk][day][grp]||{},'新成员')]=0;saveData();renderPage();showToast('已添加一条');}
-function delDDItem(wk,day,grp,name){if(!requireAdmin())return;day=decodeURIComponent(day);name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 在'+day+'的该项记录？'))return;delete DD[wk][day][grp][name];saveData();renderPage();showToast('已删除');}
+function delDDItem(wk,day,grp,name){if(!requireAdmin())return;day=decodeURIComponent(day);name=decodeURIComponent(name);confirmDialog('确认删除 '+name+' 在'+day+'的该项记录？', function(){delete DD[wk][day][grp][name];saveData();renderPage();showToast('已删除');});}
 // 优秀日报 / 每周之星 / 每月之星（数组型）
 function addDB(){if(!requireAdmin())return;DB.push({week:'W?',date:'新日期',name:'新成员',score:0,group:''});saveData();renderPage();showToast('已添加一行');}
-function delDB(i){if(!requireAdmin())return;if(!confirm('确认删除这条优秀日报？'))return;DB.splice(i,1);saveData();renderPage();showToast('已删除');}
+function delDB(i){if(!requireAdmin())return;confirmDialog('确认删除这条优秀日报？', function(){DB.splice(i,1);saveData();renderPage();showToast('已删除');});}
 function addStar(){if(!requireAdmin())return;stars.push({wk:'W?',name:'',group:''});saveData();renderPage();showToast('已添加一行');}
-function delStar(i){if(!requireAdmin())return;if(!confirm('确认删除这条每周之星？'))return;stars.splice(i,1);saveData();renderPage();showToast('已删除');}
+function delStar(i){if(!requireAdmin())return;confirmDialog('确认删除这条每周之星？', function(){stars.splice(i,1);saveData();renderPage();showToast('已删除');});}
 function addMStar(){if(!requireAdmin())return;var nl=nextMonthLabel();monthlyStars.push({month:nl,name:'',group:'',score:0});saveData();renderPage();showToast('已添加 '+nl+' 之星，请填写姓名');}
-function delMStar(i){if(!requireAdmin())return;if(!confirm('确认删除这条每月之星？'))return;monthlyStars.splice(i,1);saveData();renderPage();showToast('已删除');}
+function delMStar(i){if(!requireAdmin())return;confirmDialog('确认删除这条每月之星？', function(){monthlyStars.splice(i,1);saveData();renderPage();showToast('已删除');});}
 // 每月积分 / 总积分（名册级）
 function addMonthly(key){if(!requireAdmin())return;addMemberPrompt();}
 function delMonthly(name){if(!requireAdmin())return;delMember(name);}
@@ -662,7 +675,7 @@ function addMonth(){
 }
 // 团队维度明细（增删周）
 function addTDWeek(){if(!requireAdmin())return;var mx=0;Object.keys(TD).forEach(function(w){var n=parseInt(w.replace('W',''))||0;if(n>mx)mx=n;});var nw='W'+(mx+1);TD[nw]={'第一组':[0,0,0,0,0,0,0],'第二组':[0,0,0,0,0,0,0],'第三组':[0,0,0,0,0,0,0],star:''};saveData();renderPage();showToast('已添加'+nw);}
-function delTDWeek(w){if(!requireAdmin())return;if(!confirm('确认删除 '+w+' 的维度数据？'))return;delete TD[w];saveData();renderPage();showToast('已删除');}
+function delTDWeek(w){if(!requireAdmin())return;confirmDialog('确认删除 '+w+' 的维度数据？', function(){delete TD[w];saveData();renderPage();showToast('已删除');});}
 // ===== 成员改名/调组 统一同步（避免各表数据不一致）=====
 function syncRename(oldName,newName){
   if(!oldName||oldName===newName)return;
@@ -829,6 +842,11 @@ function medalIcon(i){return i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);}
 function nowStr(){return new Date().toLocaleString('zh-CN',{hour12:false}).replace(/\//g,'-');}
 function showToast(msg){var t=document.createElement('div');t.textContent=msg;t.className='toast';document.body.appendChild(t);setTimeout(function(){t.style.opacity='0';setTimeout(function(){document.body.removeChild(t);},300);},1800);}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
+// 自定义确认弹窗（替代原生 confirm，避免内置浏览器拦截导致删除失败）
+var _confirmCb=null;
+function confirmDialog(msg,onYes){var el=document.getElementById('confirm-msg');if(el)el.textContent=msg;_confirmCb=onYes;openModal('modal-confirm');}
+function closeConfirm(){_confirmCb=null;closeModal('modal-confirm');}
+function runConfirm(){var cb=_confirmCb;_confirmCb=null;closeModal('modal-confirm');if(typeof cb==='function')cb();}
 function openModal(id){document.getElementById(id).classList.add('show');}
 
 // 团队第一阶段最终排名(W4小计)
@@ -1188,7 +1206,7 @@ function renderDailyList(wk){
   let h='';
   for(let day in data){
     var dayHtml=dlEdit?textInput('pdl_day_'+day,day):day;
-    var delDayBtn=isAdmin?'<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>':'';
+    var delDayBtn='<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>';
     h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+dayHtml+delDayBtn;
     if(dlEdit){
       h+='<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
@@ -1258,7 +1276,7 @@ function renderDetailDaily(wk){
   let h='';
   for(let day in data){
     var dayHtml=ddEdit?textInput('dd_day_'+day,day):day;
-    var delDayBtn=isAdmin?'<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>':'';
+    var delDayBtn='<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>';
     h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+dayHtml+delDayBtn;
     if(ddEdit){
       h+='<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
@@ -2076,10 +2094,11 @@ async function submitKb(){
 }
 async function deleteKb(id){
   if(!requireAdmin())return;
-  if(!confirm('确认删除这条知识？'))return;
-  if(supa)await supa.from('knowledge_base').delete().eq('id',id);
-  cloudData.knowledge=cloudData.knowledge.filter(function(x){return x.id!==id;});
-  showToast('已删除');renderPage();
+  confirmDialog('确认删除这条知识？', async function(){
+    if(supa)await supa.from('knowledge_base').delete().eq('id',id);
+    cloudData.knowledge=cloudData.knowledge.filter(function(x){return x.id!==id;});
+    showToast('已删除');renderPage();
+  });
 }
 
 // ===== 通知文件 =====
@@ -2129,10 +2148,11 @@ async function submitNotice(){
 }
 async function deleteNotice(id){
   if(!requireAdmin())return;
-  if(!confirm('确认删除这条通知？'))return;
-  if(supa)await supa.from('notices').delete().eq('id',id);
-  cloudData.notices=cloudData.notices.filter(function(x){return x.id!==id;});
-  showToast('已删除');renderPage();
+  confirmDialog('确认删除这条通知？', async function(){
+    if(supa)await supa.from('notices').delete().eq('id',id);
+    cloudData.notices=cloudData.notices.filter(function(x){return x.id!==id;});
+    showToast('已删除');renderPage();
+  });
 }
 
 // ===== 记录 =====
@@ -2183,10 +2203,11 @@ async function submitRecord(){
 }
 async function deleteRecord(id){
   if(!requireAdmin())return;
-  if(!confirm('确认删除这条记录？'))return;
-  if(supa)await supa.from('general_records').delete().eq('id',id);
-  cloudData.records=cloudData.records.filter(function(x){return x.id!==id;});
-  showToast('已删除');renderPage();
+  confirmDialog('确认删除这条记录？', async function(){
+    if(supa)await supa.from('general_records').delete().eq('id',id);
+    cloudData.records=cloudData.records.filter(function(x){return x.id!==id;});
+    showToast('已删除');renderPage();
+  });
 }
 
 // ===== 侧边栏底部(管理员入口) =====
