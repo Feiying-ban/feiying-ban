@@ -1187,15 +1187,15 @@ function renderDailyList(wk){
   var dlEdit=editSections['pdaily-list'];
   let h='';
   for(let day in data){
+    var dayHtml=dlEdit?textInput('pdl_day_'+day,day):day;
+    var delDayBtn=isAdmin?'<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>':'';
+    h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+dayHtml+delDayBtn;
     if(dlEdit){
-      h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+textInput('pdl_day_'+day,day)+
-         '<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>'+
-         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
+      h+='<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
          '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第二组\')">+二组</button>'+
-         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第三组\')">+三组</button></div><div class="day-items">';
-    } else {
-      h+='<div class="day-block"><div class="day-header">'+day+'</div><div class="day-items">';
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第三组\')">+三组</button>';
     }
+    h+='</div><div class="day-items">';
     for(let grp in data[day]){
       var grpOrder=GROUPS[grp]||[];
       var pdlNames=Object.keys(data[day][grp]).sort(function(a,b){var ia=grpOrder.indexOf(a),ib=grpOrder.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib;});
@@ -1257,15 +1257,15 @@ function renderDetailDaily(wk){
   var ddEdit=editSections['dd-list'];
   let h='';
   for(let day in data){
+    var dayHtml=ddEdit?textInput('dd_day_'+day,day):day;
+    var delDayBtn=isAdmin?'<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>':'';
+    h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+dayHtml+delDayBtn;
     if(ddEdit){
-      h+='<div class="day-block"><div class="day-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+textInput('dd_day_'+day,day)+
-         '<button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="delDDDay(\''+wk+'\',\''+encodeURIComponent(day)+'\')">🗑本日</button>'+
-         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
+      h+='<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第一组\')">+一组</button>'+
          '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第二组\')">+二组</button>'+
-         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第三组\')">+三组</button></div><div class="day-items">';
-    } else {
-      h+='<div class="day-block"><div class="day-header">'+day+'</div><div class="day-items">';
+         '<button class="btn btn-primary btn-sm" style="padding:1px 6px;font-size:10px" onclick="addDDItem(\''+wk+'\',\''+encodeURIComponent(day)+'\',\'第三组\')">+三组</button>';
     }
+    h+='</div><div class="day-items">';
     for(let grp in data[day]){
       var grpOrder=GROUPS[grp]||[];
       var ddNames=Object.keys(data[day][grp]).sort(function(a,b){var ia=grpOrder.indexOf(a),ib=grpOrder.indexOf(b);if(ia<0)ia=9999;if(ib<0)ib=9999;return ia-ib;});
