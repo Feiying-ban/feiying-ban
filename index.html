@@ -285,6 +285,30 @@ select{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-date">
+  <div class="modal">
+    <div class="modal-header"><h3>添加日期</h3><button class="modal-close" onclick="closeModal('modal-date')">&times;</button></div>
+    <div class="modal-body">
+      <p style="margin:0 0 10px;color:#666;font-size:13px">选择任意日期（可补录历史或预填未来），也可填写自定义标签。</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-ghost" onclick="setQuickDate(0)">今天</button>
+        <button class="btn btn-ghost" onclick="setQuickDate(-1)">昨天</button>
+      </div>
+      <div class="form-group"><label>日期</label>
+        <input id="date-input" type="date" onchange="document.getElementById('date-preview').textContent='将记为：'+dateToLabel(this.value)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" />
+      </div>
+      <div id="date-preview" style="margin:6px 0 12px;color:#2C3E50;font-size:13px;font-weight:600"></div>
+      <div class="form-group"><label>或自定义标签（留空则按上面日期）</label>
+        <input id="date-custom" type="text" placeholder="如：8月15日 / 开学日 / 调休日" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-date')">取消</button>
+      <button class="btn btn-primary" onclick="submitDate()">确定添加</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ===== 管理员权限 =====
@@ -538,7 +562,39 @@ function delPW(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);
 function addPD(wk){if(!requireAdmin())return;if(!PD[wk])PD[wk]={};PD[wk][_uniq(PD[wk],'新成员')]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};detailWeek=wk;saveData();renderPage();showToast('已添加一行');}
 function delPD(wk,name){if(!requireAdmin())return;name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 的积分构成？'))return;delete PD[wk][name];saveData();renderPage();showToast('已删除');}
 // 每日记录 / 每日积分（DD）
-function addDDDay(wk){if(!requireAdmin())return;if(!DD[wk])DD[wk]={};var d=_uniq(DD[wk],todayLabel());DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};saveData();renderPage();showToast('已添加新日期：'+d);}
+var dateModalWk='W1';
+function addDDDay(wk){if(!requireAdmin())return;openDateModal(wk);}
+function openDateModal(wk){
+  dateModalWk=wk;
+  var t=new Date();
+  var inp=document.getElementById('date-input');
+  inp.value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  document.getElementById('date-preview').textContent='将记为：'+(t.getMonth()+1)+'月'+t.getDate()+'日';
+  document.getElementById('date-custom').value='';
+  openModal('modal-date');
+}
+function dateToLabel(v){
+  if(!v)return todayLabel();
+  var p=v.split('-');
+  if(p.length<3)return v;
+  return parseInt(p[1],10)+'月'+parseInt(p[2],10)+'日';
+}
+function setQuickDate(off){
+  var t=new Date();t.setDate(t.getDate()+off);
+  var v=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  var inp=document.getElementById('date-input');inp.value=v;
+  document.getElementById('date-preview').textContent='将记为：'+(t.getMonth()+1)+'月'+t.getDate()+'日';
+}
+function submitDate(){
+  var custom=document.getElementById('date-custom').value.trim();
+  var label=custom?custom:dateToLabel(document.getElementById('date-input').value);
+  if(!label){showToast('请选择日期或填写标签');return;}
+  var wk=dateModalWk;
+  if(!DD[wk])DD[wk]={};
+  var d=_uniq(DD[wk],label);
+  DD[wk][d]={'第一组':{},'第二组':{},'第三组':{}};
+  saveData();closeModal('modal-date');renderPage();showToast('已添加新日期：'+d);
+}
 function delDDDay(wk,day){if(!requireAdmin())return;day=decodeURIComponent(day);if(!confirm('确认删除 '+day+' 当天全部记录？'))return;delete DD[wk][day];saveData();renderPage();showToast('已删除');}
 function addDDItem(wk,day,grp){if(!requireAdmin())return;day=decodeURIComponent(day);if(!DD[wk])DD[wk]={};if(!DD[wk][day])DD[wk][day]={'第一组':{},'第二组':{},'第三组':{}};DD[wk][day][grp][_uniq(DD[wk][day][grp]||{},'新成员')]=0;saveData();renderPage();showToast('已添加一条');}
 function delDDItem(wk,day,grp,name){if(!requireAdmin())return;day=decodeURIComponent(day);name=decodeURIComponent(name);if(!confirm('确认删除 '+name+' 在'+day+'的该项记录？'))return;delete DD[wk][day][grp][name];saveData();renderPage();showToast('已删除');}
