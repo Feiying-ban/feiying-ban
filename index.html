@@ -371,7 +371,7 @@ function onMemberSelectChange(sel){
 }
 // ===== 各数据类型的保存逻辑 =====
 function saveTD(){
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){
+  allWeeks().forEach(function(w){
     ['第一组','第二组','第三组'].forEach(function(g){
       for(var ci=0;ci<TCOLS.length;ci++){
         var el=document.getElementById('td_'+w+'_'+g+'_'+ci);
@@ -516,7 +516,7 @@ function addMember(name,group){
   if(!GROUPS[group])group='第一组';
   if(getGroup(name)){showToast('该成员已存在（'+getGroup(name)+'）');renderPage();return;}
   GROUPS[group].push(name);
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){
+  allWeeks().forEach(function(w){
     if(!PW[w])PW[w]={};PW[w][name]=0;
     if(!PD[w])PD[w]={};if(!PD[w][name])PD[w][name]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};
   });
@@ -526,7 +526,7 @@ function delMember(name){
   name=decodeURIComponent(name);
   if(!confirm('确认删除成员 '+name+'（将一并清除其所有积分记录）？'))return;
   for(var g in GROUPS){var i=GROUPS[g].indexOf(name);if(i>=0)GROUPS[g].splice(i,1);}
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
+  allWeeks().forEach(function(w){if(PW[w])delete PW[w][name];if(PD[w])delete PD[w][name];});
   for(var m in monthlyData)delete monthlyData[m][name];
   if(totalData)delete totalData[name];
   saveData();renderPage();showToast('已删除成员 '+name);
@@ -547,13 +547,63 @@ function addDB(){if(!requireAdmin())return;DB.push({week:'W?',date:'新日期',n
 function delDB(i){if(!requireAdmin())return;if(!confirm('确认删除这条优秀日报？'))return;DB.splice(i,1);saveData();renderPage();showToast('已删除');}
 function addStar(){if(!requireAdmin())return;stars.push({wk:'W?',name:'',group:''});saveData();renderPage();showToast('已添加一行');}
 function delStar(i){if(!requireAdmin())return;if(!confirm('确认删除这条每周之星？'))return;stars.splice(i,1);saveData();renderPage();showToast('已删除');}
-function addMStar(){if(!requireAdmin())return;monthlyStars.push({month:'新月份',name:'',group:'',score:0});saveData();renderPage();showToast('已添加一行');}
+function addMStar(){if(!requireAdmin())return;var nl=nextMonthLabel();monthlyStars.push({month:nl,name:'',group:'',score:0});saveData();renderPage();showToast('已添加 '+nl+' 之星，请填写姓名');}
 function delMStar(i){if(!requireAdmin())return;if(!confirm('确认删除这条每月之星？'))return;monthlyStars.splice(i,1);saveData();renderPage();showToast('已删除');}
 // 每月积分 / 总积分（名册级）
 function addMonthly(key){if(!requireAdmin())return;addMemberPrompt();}
 function delMonthly(name){if(!requireAdmin())return;delMember(name);}
 function addTotal(){if(!requireAdmin())return;addMemberPrompt();}
 function delTotal(name){if(!requireAdmin())return;delMember(name);}
+// ===== 周次 / 月份 动态扩展（延续性录入：8月及以后可自己添加）=====
+function wkNum(w){var n=parseInt(String(w).replace(/[^0-9]/g,''));return isNaN(n)?0:n;}
+function allWeeks(){
+  var set={};
+  [TD,PW,PD,DD].forEach(function(o){if(o)for(var k in o)set[k]=1;});
+  var ks=Object.keys(set);
+  ks.sort(function(a,b){return wkNum(a)-wkNum(b);});
+  return ks.length?ks:['W1'];
+}
+function defaultMonthsDef(){return [{label:'7月',key:'7月',wks:['W1','W2','W3','W4']},{label:'8月',key:'8月',wks:['W5','W6','W7']}];}
+function getMonthsDef(){
+  try{var d=localStorage.getItem('fy_months_def');if(d){var a=JSON.parse(d);if(Array.isArray(a)&&a.length)return a;}}catch(e){}
+  return defaultMonthsDef();
+}
+function saveMonthsDef(def){try{localStorage.setItem('fy_months_def',JSON.stringify(def));}catch(e){}}
+function resolveMonthWeeks(def){
+  var all=allWeeks();var claimed={};
+  for(var i=0;i<def.length-1;i++){(def[i].wks||[]).forEach(function(w){claimed[w]=1;});}
+  var out=def.map(function(m){return{label:m.label,key:m.key,wks:(m.wks||[]).slice()};});
+  if(out.length){var last=out[out.length-1];all.forEach(function(w){if(!claimed[w]&&last.wks.indexOf(w)<0)last.wks.push(w);});}
+  return out;
+}
+function nextMonthLabel(){
+  var def=getMonthsDef();var last=def[def.length-1];
+  var m=parseInt((last.label||'1月').replace(/[^0-9]/g,''))||1;m=m%12+1;return m+'月';
+}
+function addWeek(){
+  if(!requireAdmin())return;
+  var mx=0;allWeeks().forEach(function(w){var n=wkNum(w);if(n>mx)mx=n;});
+  var nw='W'+(mx+1);
+  if(!TD[nw])TD[nw]={'第一组':[0,0,0,0,0,0,0],'第二组':[0,0,0,0,0,0,0],'第三组':[0,0,0,0,0,0,0],star:''};
+  if(!PW[nw])PW[nw]={};
+  if(!PD[nw])PD[nw]={};
+  if(!DD[nw])DD[nw]={};
+  getAllNames().forEach(function(n){
+    if(PW[nw][n]===undefined)PW[nw][n]=0;
+    if(!PD[nw][n])PD[nw][n]={a:0,sp:0,an:0,ho:0,re:0,di:0,st:0,t:0};
+  });
+  weeklySelected=nw;detailWeek=nw;dailySelected=nw;
+  saveData();renderPage();showToast('已添加 '+nw+'，可继续录入');
+}
+function addMonth(){
+  if(!requireAdmin())return;
+  var def=getMonthsDef();
+  var resolved=resolveMonthWeeks(def);
+  for(var i=0;i<def.length;i++){if(resolved[i])def[i].wks=resolved[i].wks;}
+  var nl=nextMonthLabel();
+  def.push({label:nl,key:nl,wks:[]});
+  saveMonthsDef(def);saveData();renderPage();showToast('已添加月份：'+nl);
+}
 // 团队维度明细（增删周）
 function addTDWeek(){if(!requireAdmin())return;var mx=0;Object.keys(TD).forEach(function(w){var n=parseInt(w.replace('W',''))||0;if(n>mx)mx=n;});var nw='W'+(mx+1);TD[nw]={'第一组':[0,0,0,0,0,0,0],'第二组':[0,0,0,0,0,0,0],'第三组':[0,0,0,0,0,0,0],star:''};saveData();renderPage();showToast('已添加'+nw);}
 function delTDWeek(w){if(!requireAdmin())return;if(!confirm('确认删除 '+w+' 的维度数据？'))return;delete TD[w];saveData();renderPage();showToast('已删除');}
@@ -561,7 +611,7 @@ function delTDWeek(w){if(!requireAdmin())return;if(!confirm('确认删除 '+w+' 
 function syncRename(oldName,newName){
   if(!oldName||oldName===newName)return;
   for(var g in GROUPS){var i=GROUPS[g].indexOf(oldName);if(i>=0){if(GROUPS[g].indexOf(newName)<0)GROUPS[g][i]=newName;else GROUPS[g].splice(i,1);}}
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){
+  allWeeks().forEach(function(w){
     if(PW[w]&&PW[w][oldName]!==undefined){PW[w][newName]=PW[w][oldName];delete PW[w][oldName];}
     if(PD[w]&&PD[w][oldName]){PD[w][newName]=PD[w][oldName];delete PD[w][oldName];}
   });
@@ -901,7 +951,7 @@ function pageOverview(){
   });
   h+=`</div>`;
   // 段位分布（参考 BI 分布统计）
-  var wksAll=['W1','W2','W3','W4','W5','W6','W7'];
+  var wksAll=allWeeks();
   var dist={};
   getAllNames().forEach(function(n){var l=getLevel(getTotalByWeek(n,wksAll));dist[l.name]=(dist[l.name]||0)+1;});
   h+='<div class="card"><div class="card-title">🏅 段位分布</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
@@ -938,7 +988,7 @@ function pageTeam(){
   });
   h+=`</table></div>`;
   // 维度明细表
-  h+=`<div class="card"><div class="card-title">📊 维度明细 ${editBtn('td-detail', abBtn('➕添加周','addTDWeek()'))}</div>`;
+  h+=`<div class="card"><div class="card-title">📊 维度明细 ${editBtn('td-detail', abBtn('➕添加周次','addWeek()'))}</div>`;
   var tdEdit=editSections['td-detail'];
   h+=`<div class="detail-table-wrap"><table class="simple-table" style="font-size:11px;min-width:500px">`;
   h+=`<tr><th>周次</th>`;
@@ -974,15 +1024,15 @@ function pageTeam(){
 // === 每周积分 ===
 let weeklySelected='W1';
 function pageWeekly(){
-  let h=`<div class="page-title">🏆 每周积分 ${editBtn('pw-list', abBtn('➕添加成员','addMemberPrompt()'))}</div>`;
+  let h=`<div class="page-title">🏆 每周积分 ${editBtn('pw-list', abBtn('➕添加成员','addMemberPrompt()')+' '+abBtn('➕添加周次','addWeek()'))}</div>`;
   h+=`<div class="filter-bar">`;
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(w=>{h+=`<div class="filter-btn${w===weeklySelected?' active':''}" data-week="${w}">${w}</div>`;});
+  allWeeks().forEach(w=>{h+=`<div class="filter-btn${w===weeklySelected?' active':''}" data-week="${w}">${w}</div>`;});
   h+=`</div>`;
   h+=`<div id="weeklyList">${renderWeeklyList(weeklySelected)}</div>`;
   return h;
 }
 function renderWeeklyList(wk){
-  const data=PW[wk];
+  const data=PW[wk]||{};
   let arr=[];
   for(let n in data)arr.push({name:n,score:data[n],group:getGroup(n)});
   arr.sort((a,b)=>b.score-a.score);
@@ -1011,12 +1061,9 @@ function bindWeeklyFilter(){
 // === 每月积分 ===
 function pageMonthly(){
   const names=getAllNames();
-  const months=[
-    {label:'7月',key:'7月',wks:['W1','W2','W3','W4']},
-    {label:'8月',key:'8月',wks:['W5','W6','W7']}
-  ];
+  const months=resolveMonthWeeks(getMonthsDef());
   var mEdit=editSections['monthly-list'];
-  let h='<div class="page-title">🏆 每月积分 '+editBtn('monthly-list', abBtn('➕添加成员','addMemberPrompt()'))+'</div>';
+  let h='<div class="page-title">🏆 每月积分 '+editBtn('monthly-list', abBtn('➕添加成员','addMemberPrompt()')+' '+abBtn('➕添加月份','addMonth()'))+'</div>';
   months.forEach(m=>{
     var mData=monthlyData[m.key];
     let arr=names.map(n=>{
@@ -1044,7 +1091,7 @@ function pageMonthly(){
 // === 总积分排行 ===
 function pageTotal(){
   const names=getAllNames();
-  const wks=['W1','W2','W3','W4','W5','W6','W7'];
+  const wks=allWeeks();
   var tEdit=editSections['total-list'];
   let arr=names.map(n=>{
     var score=totalData[n]!==undefined?totalData[n]:getTotalByWeek(n,wks);
@@ -1072,15 +1119,15 @@ function pageTotal(){
 let dailySelected='W1';
 function pageDaily(pageId){
   let title=pageId==='daily-detail'?'📋 每日明细':'🏆 每日积分';
-  let h='<div class="page-title">'+title+' '+editBtn('pdaily-list', abBtn('➕添加日期','addDDDay(\''+dailySelected+'\')'))+'</div>';
+  let h='<div class="page-title">'+title+' '+editBtn('pdaily-list', abBtn('➕添加日期','addDDDay(\''+dailySelected+'\')')+' '+abBtn('➕添加周次','addWeek()'))+'</div>';
   h+='<div class="filter-bar">';
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(w=>{h+='<div class="filter-btn'+(w===dailySelected?' active':'')+'" data-dweek="'+w+'">'+w+'</div>';});
+  allWeeks().forEach(w=>{h+='<div class="filter-btn'+(w===dailySelected?' active':'')+'" data-dweek="'+w+'">'+w+'</div>';});
   h+='</div>';
   h+='<div id="dailyList">'+renderDailyList(dailySelected)+'</div>';
   return h;
 }
 function renderDailyList(wk){
-  const data=DD[wk];
+  const data=DD[wk]||{};
   var dlEdit=editSections['pdaily-list'];
   let h='';
   for(let day in data){
@@ -1126,9 +1173,9 @@ let detailWeek='W1';
 function pageDailyDetail(){
   let h=`<div class="page-title">📋 每日明细</div>`;
   h+=`<div class="filter-bar">`;
-  ['W1','W2','W3','W4','W5','W6','W7'].forEach(w=>{h+=`<div class="filter-btn${w===detailWeek?' active':''}" data-dtweek="${w}">${w}</div>`;});
+  allWeeks().forEach(w=>{h+=`<div class="filter-btn${w===detailWeek?' active':''}" data-dtweek="${w}">${w}</div>`;});
   h+=`</div>`;
-  h+=`<div class="card"><div class="card-title">📝 每日记录 ${editBtn('dd-list', abBtn('➕添加日期','addDDDay(\''+detailWeek+'\')'))}</div><div id="detailDaily">${renderDetailDaily(detailWeek)}</div></div>`;
+  h+=`<div class="card"><div class="card-title">📝 每日记录 ${editBtn('dd-list', abBtn('➕添加日期','addDDDay(\''+detailWeek+'\')')+' '+abBtn('➕添加周次','addWeek()'))}</div><div id="detailDaily">${renderDetailDaily(detailWeek)}</div></div>`;
   h+=`<div class="card"><div class="card-title">📊 本周积分构成 ${editBtn('pd-table', abBtn('➕添加成员','addMemberPrompt()'))}</div><div id="detailComp">${renderDetailComp(detailWeek)}</div></div>`;
   h+=`<div class="card"><div class="card-title">📖 积分规则说明</div>${renderRules()}</div>`;
   h+=`<div class="card"><div class="card-title">📝 优秀日报记录 ${editBtn('db-list', abBtn('➕添加','addDB()'))}</div>`;
@@ -1150,7 +1197,7 @@ function pageDailyDetail(){
   return h;
 }
 function renderDetailDaily(wk){
-  const data=DD[wk];
+  const data=DD[wk]||{};
   var ddEdit=editSections['dd-list'];
   let h='';
   for(let day in data){
@@ -1325,7 +1372,7 @@ function pageMonthlyStar(){
   return h;
 }
 function saveMonthlyData(){
-  var months=[{key:'7月'},{key:'8月'}];
+  var months=getMonthsDef();
   months.forEach(function(m){
     var newData={};var names=getAllNames();
     names.forEach(function(n){
@@ -1438,7 +1485,7 @@ function fyZip(files){
   return out;
 }
 function exportData(){
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var wks=allWeeks();
   var names=getAllNames();
   var rowsList=[],widthsList=[],namesList=[];
   // 1 每周积分
@@ -1452,7 +1499,7 @@ function exportData(){
   rowsList.push(r1);widthsList.push([12,10,8,8,8,8,8,8,10]);namesList.push('每周积分');
   // 2 每月积分
   var r2=[];
-  var months=[{l:'7月',k:'7月',w:['W1','W2','W3','W4']},{l:'8月',k:'8月',w:['W5','W6','W7']}];
+  var months=resolveMonthWeeks(getMonthsDef()).map(function(m){return{l:m.label,k:m.key,w:m.wks};});
   months.forEach(function(m){
     r2.push([{v:'（'+m.l+'）',s:1}]);
     r2.push([{v:'姓名',s:1},{v:'组别',s:1},{v:'分数',s:1}]);
@@ -1531,7 +1578,7 @@ function bindProfile(){
 }
 function renderProfile(){
   var el=document.getElementById('profBody');if(!el)return;
-  var n=profileSel;var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var n=profileSel;var wks=allWeeks();
   var row=wks.map(w=>(PW[w]&&PW[w][n]!==undefined)?PW[w][n]:0);
   var total=row.reduce((a,b)=>a+b,0);
   var lv=getLevel(total);
@@ -1551,7 +1598,7 @@ function renderProfile(){
 }
 function drawProfChart(){
   var canvas=document.getElementById('profChart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var wks=allWeeks();
   var data=wks.map(w=>(PW[w]&&PW[w][profileSel]!==undefined)?PW[w][profileSel]:0);
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=200;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
@@ -1581,7 +1628,7 @@ function doSearch(){
   var el=document.getElementById('searchInput');if(!el)return;
   var kw=el.value.trim();
   var box=document.getElementById('searchResult');if(!box)return;
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var wks=allWeeks();
   if(!kw){box.innerHTML='<p style="font-size:12px;color:#999;text-align:center;padding:12px">输入关键字开始搜索</p>';return;}
   var names=getAllNames().filter(function(n){return n.indexOf(kw)>=0;});
   if(!names.length){box.innerHTML='<p style="font-size:12px;color:#999;text-align:center;padding:12px">未找到匹配的学员</p>';return;}
@@ -1649,7 +1696,7 @@ function initCompare(){
   const doCmp=()=>{
     const na=a.value,nb=b.value;
     if(!na||!nb){document.getElementById('cmpResult').innerHTML='<div style="color:#999;font-size:12px;text-align:center;padding:10px">请选择两位学员</div>';return;}
-    const wks=['W1','W2','W3','W4','W5','W6','W7'];
+    const wks=allWeeks();
     let h=`<table class="cmp-table"><tr><th>周次</th><th>${na}${levelBadge(getTotalByWeek(na,wks))}</th><th>${nb}${levelBadge(getTotalByWeek(nb,wks))}</th></tr>`;
     let ta=0,tb=0;
     wks.forEach(w=>{
@@ -1702,7 +1749,7 @@ function renderTrendContent(){
 
 // 1. 各小组趋势
 function renderGroupTrend(){
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var wks=allWeeks();
   var groups=Object.keys(GROUPS);
   var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var h='<div class="trend-section-title">📊 各小组每周积分走势<span class="trend-subtitle">— 折线图对比</span></div>';
@@ -1721,7 +1768,7 @@ function renderGroupTrend(){
 }
 function drawGroupLineChart(){
   var canvas=document.getElementById('groupLineChart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];var groups=Object.keys(GROUPS);
+  var wks=allWeeks();var groups=Object.keys(GROUPS);
   var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=240;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
@@ -1744,7 +1791,7 @@ function drawGroupLineChart(){
 
 // 2. 个人趋势
 function renderIndividualTrend(){
-  var names=getAllNames();var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var names=getAllNames();var wks=allWeeks();
   var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var h='<div class="trend-section-title">👤 个人积分趋势<span class="trend-subtitle">— 按时间轴查看每人每周得分</span></div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">';
@@ -1767,7 +1814,7 @@ function renderIndividualTrend(){
 function drawIndividualChart(){if(trendView==='weekly')drawIndWeeklyChart();else drawIndDailyChart();}
 function drawIndWeeklyChart(){
   var canvas=document.getElementById('indLineChart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var wks=allWeeks();var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
@@ -1792,7 +1839,7 @@ function drawIndDailyChart(){
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-  var days=[];['W1','W2','W3','W4','W5','W6','W7'].forEach(function(w){if(DD[w])for(var d in DD[w])days.push({date:d,week:w});});
+  var days=[];allWeeks().forEach(function(w){if(DD[w])for(var d in DD[w])days.push({date:d,week:w});});
   days.sort(function(a,b){return a.date.localeCompare(b.date);});
   if(!days.length){ctx.fillStyle='#999';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('暂无每日数据',W/2,H/2);return;}
   var ml=36,mr=10,mt=20,mb=50;var cW=W-ml-mr,cH=H-mt-mb;
@@ -1821,7 +1868,7 @@ function renderMemberTrend(){
   return h;
 }
 function drawMemberCharts(){
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];var groups=Object.keys(GROUPS);
+  var wks=allWeeks();var groups=Object.keys(GROUPS);
   var lineColors=['#667eea','#9b8fd4','#4a90d9','#7bb8f0','#357abd','#1a5276'];
   groups.forEach(function(g,gi){
     var canvas=document.getElementById('memberChart_'+gi);if(!canvas)return;
@@ -1848,7 +1895,7 @@ function drawMemberCharts(){
 
 // 4. 建议视图
 function renderSuggestionTrend(){
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];
+  var wks=allWeeks();
   var h='<div class="trend-section-title">💡 建议增加的视图</div>';
   h+='<div class="card" style="font-size:12px;color:#666;line-height:1.8">';
   h+='<p><strong>1. 累计积分增长曲线</strong> — 展示每人从W1到当前周的累计积分增长轨迹，看谁进步最快</p>';
@@ -1871,7 +1918,7 @@ function drawSuggestionCharts(){drawCumulativeChart();drawTop5Chart();var sel=do
 function drawCumulativeChart(){
   var canvas=document.getElementById('cumulativeChart');if(!canvas)return;
   var sel=document.getElementById('sugPersonSel');var person=sel?sel.value:'李龙海';
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
+  var wks=allWeeks();var gColors={'第一组':'#667eea','第二组':'#fda085','第三组':'#52c41a'};
   var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
@@ -1892,7 +1939,7 @@ function drawCumulativeChart(){
 }
 function drawTop5Chart(){
   var canvas=document.getElementById('top5Chart');if(!canvas)return;
-  var wks=['W1','W2','W3','W4','W5','W6','W7'];var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
+  var wks=allWeeks();var dpr=window.devicePixelRatio||1;var rect=canvas.parentElement.getBoundingClientRect();
   var W=rect.width-20;var H=220;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
   var ml=44,mr=16,mt=16,mb=36;var cW=W-ml-mr,cH=H-mt-mb;
